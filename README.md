@@ -8,38 +8,51 @@ your objects. And you can define the attributes according to the Google Objectiv
 styleguide using a trailing underscore, i.e. your public attribute is then defined 
 without this underscore.
 
-Preparation:
+Preparations
+------------
 
 You have to define some helpers in your code that will indicate your properties
 
-#define XASSIGN
-#define XRETAIN 
-#define XCOPY 
-#define XATOMIC 
-#define XREADONLY
-#define XIBOUTLET
+    #define XASSIGN
+    #define XRETAIN 
+    #define XCOPY 
+    #define XATOMIC 
+    #define XREADONLY
+    #define XIBOUTLET
 
-Your code:
+Your code
+---------
 
 In your header file mark you properties like this
 
-@interface CountdownView : UIView {
-    XIBOUTLET UILabel *_dd, *_hh, *_mm;
-    XIBOUTLET UILabel *_matchTitle;
+	#import <UIKit/UIKit.h>
 
-    id somewhat_;
+	@interface DemoViewController : UIViewController {
+	    XIBOUTLET UILabel *header_;
+	    XIBOUTLET UITextView *message_;    
+	    XASSIGN id delegate_;    
+	    XASSIGN int counter;    
+	    XRETAIN NSArray *listOfUsers_;    
+	    XCOPY NSString *secretKey_;
+	    int age;
+	}
 
-    XCOPY NSString *title_;
-    XASSIGN id delegate_;
-    XRETAIN UIView *myNewView_;
-}
+	@end
 
-@end
+Usage
+-----
 
-Usage:
-
-$ python objc.py sample.h
+``$ python objc.py sample.h``
 
 After that your .h and .m files are updated. XCode should reload your code in the editor
 automatically. The command also creates a new subfolder which contains a backup of your 
 original code, hope you never will need it ;)
+
+Example
+-------
+
+Some pictures say more than thousand words. Here is a before/after diff showing the magic:
+
+![Header](image/demo-h.png "Header")
+
+![Module](image/demo-h.png "Module")
