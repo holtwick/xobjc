@@ -240,7 +240,17 @@ def modifyFiles(filename):
     
 if __name__=="__main__":
     import sys
-    if len(sys.argv)!=2:
-        print "Usage: objc.py [filename]"
+        
+    # You can also place it into 'XCode User Scripts' but it does not relead the window yet
+    try:
+        filename = '%%%{PBXFilePath}%%%'
+    except:
+        filename = ''
+    
+    if filename and (not filename.startswith('%')):
+        modifyFiles(filename)
     else:
-        modifyFiles(sys.argv[1])
+        if len(sys.argv)!=2:
+            print "Usage: xobjc.py [filename]"
+        else:
+            modifyFiles(sys.argv[1])
