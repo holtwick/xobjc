@@ -53,6 +53,6 @@ Example
 
 Some pictures say more than thousand words. Here is a before/after diff showing the magic:
 
-![Header](image/demo-h.png "Header")
+![Header](http://mail.holtwick.it/xobjc/demo-h.png "Header")
 
-![Module](image/demo-h.png "Module")
+![Module](http://mail.holtwick.it/xobjc/demo-m.png "Module")
