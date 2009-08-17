@@ -3,7 +3,7 @@ xobjc
 
 A tool for making annoying every day tasks for Objective-C developers, especially
 iPhone developers, easier. Therefore this tool will help you writing semi-automatically
-the @property and @synthesize stuff. It also updates the dealloc method to release
+the ``@property`` and ``@synthesize`` stuff. It also updates the ``dealloc`` method to release
 your objects. And you can define the attributes according to the Google Objective-C
 styleguide using a trailing underscore, i.e. your public attribute is then defined 
 without this underscore.
@@ -42,9 +42,9 @@ In your header file mark you properties like this
 Usage
 -----
 
-``$ python objc.py sample.h``
+``$ python xobjc.py sample.h``
 
-After that your .h and .m files are updated. XCode should reload your code in the editor
+After that your ``.h`` and ``.m`` files are updated. XCode should reload your code in the editor
 automatically. The command also creates a new subfolder which contains a backup of your 
 original code, hope you never will need it ;)
 
