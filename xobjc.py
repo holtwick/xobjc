@@ -249,6 +249,12 @@ if __name__=="__main__":
     
     if filename and (not filename.startswith('%')):
         modifyFiles(filename)
+
+        # Trick to reload files in XCode
+        import subprocess        
+        subprocess.call(['osascript', '-e', 'activate application "Finder"'])
+        subprocess.call(['osascript', '-e', 'activate application "XCode"'])
+
     else:
         if len(sys.argv)!=2:
             print "Usage: xobjc.py [filename]"

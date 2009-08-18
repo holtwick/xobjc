@@ -58,6 +58,14 @@ Some pictures say more than thousand words. Here is a before/after diff showing 
 
 ![Module](http://mail.holtwick.it/xobjc/demo-m.png "Module")
 
+XCode Integration
+-----------------
+
+In Xcode in the menu choose the script symbol and there ``Edit User Scripts``. Create a new
+enrty and copy and paste the contents of the file ``xobjc.py`` into the text field. That's all, 
+you are done. Just call the script form the menu or via the key shortcut you defined while you
+are in the header or implementation file you like to become updated.
+
 Related
 -------
 
