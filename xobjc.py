@@ -6,7 +6,6 @@ TODO:
 - ATOMIC
 - ViewDidUnload
 - Readonly
-- Work without defined dealloc or more individual dealloc
 - Work with more implementations etc. in one file and match name
 - Create properties and synthesize in order the are defined in var block
 
@@ -17,6 +16,7 @@ CHANGELOG:
 
 0.2 (2009-09-04)
 - Dealloc can contain custom data
+- Adds missing dealloc correctly
 
 """
 
@@ -215,16 +215,16 @@ def analyze(hdata, mdata):
                 
         md = rxdealloc.search(body)
         if md:
-            deallocbody = rxrelease.sub('', md.group("deallocbody"))            
-            newdealloc =  "- (void)dealloc{\n    " + deallocbody.strip() + "\n\n" + "\n".join(dealloc) + "\n    [super dealloc];\n}" 
+            deallocbody = rxrelease.sub('', md.group("deallocbody")).strip()     
+            if deallocbody:
+                deallocbody = "    " + deallocbody + "\n\n"
+            newdealloc =  "- (void)dealloc{\n" + deallocbody + "\n".join(dealloc) + "\n    [super dealloc];\n}" 
             body = rxdealloc.sub(newdealloc, body)
-        
-        # dealloc = "\n\n- (void)dealloc{\n" + "\n".join(dealloc) + "\n    [super dealloc];\n}"    
-    
-        #print repr(m.group('dealloc'))
-        
-        mdata = mdata[:m.start('body')] + block + body + '\n\n' + mdata[m.end('body'):] # + mdata[m.end('dealloc'):]
-        # print mdata
+        else:
+            newdealloc =  "- (void)dealloc{\n" + "\n".join(dealloc) + "\n    [super dealloc];\n}" 
+            body += "\n\n" + newdealloc  
+                
+        mdata = mdata[:m.start('body')] + block + body + '\n\n' + mdata[m.end('body'):] 
         
     return hdata, mdata
 
