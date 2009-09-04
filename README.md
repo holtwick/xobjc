@@ -12,7 +12,8 @@ without this underscore.
 Preparations
 ------------
 
-You have to define some helpers in your code that will indicate your properties
+You have to define some helpers in your code that will indicate your properties 
+(you can alternatively use ``xobjc.h`` from this package):
 
     #define XASSIGN
     #define XRETAIN 
@@ -27,6 +28,7 @@ Your code
 In your header file mark you properties like this
 
 	#import <UIKit/UIKit.h>
+	#import "xobjc.h"
 
 	@interface DemoViewController : UIViewController {
 	    XIBOUTLET UILabel *header_;
@@ -62,13 +64,13 @@ XCode Integration
 -----------------
 
 In Xcode in the menu choose the script symbol and there ``Edit User Scripts``. Create a new
-enrty and copy and paste the contents of the file ``xobjc.py`` into the text field. That's all, 
+entry and copy and paste the contents of the file ``xobjc.py`` into the text field. That's all, 
 you are done. Just call the script form the menu or via the key shortcut you defined while you
 are in the header or implementation file you like to become updated.
 
 Related
 -------
 
-	* <http://cocoawithlove.com/2008/12/instance-variable-to-synthesized.html>
-	* <http://allancraig.net/blog/?p=315> 
-	* <http://github.com/wookay/da/blob/b1190cd83df5700b0b6035eef2959c7968bde488/ruby/xcode/property_automation.rb>
+ * <http://cocoawithlove.com/2008/12/instance-variable-to-synthesized.html>
+ * <http://allancraig.net/blog/?p=315> 
+ * <http://github.com/wookay/da/blob/b1190cd83df5700b0b6035eef2959c7968bde488/ruby/xcode/property_automation.rb>
