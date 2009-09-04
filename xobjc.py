@@ -245,7 +245,7 @@ def modifyFiles(filename):
         return
     
     # Backup files
-    backupFolder = os.path.join(folder, 'objc-backup-' + datetime.datetime.today().strftime("%Y%m%d-%H%M%S"))
+    backupFolder = os.path.join(folder, '.xobjc-backup', 'backup-' + datetime.datetime.today().strftime("%Y%m%d-%H%M%S"))
     os.makedirs(backupFolder)
     shutil.copyfile(hfile, os.path.join(backupFolder, filePart[:-2] + '.h'))
     shutil.copyfile(mfile, os.path.join(backupFolder, filePart[:-2] + '.m'))
