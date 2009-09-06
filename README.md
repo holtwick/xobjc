@@ -74,3 +74,10 @@ Related
  * <http://cocoawithlove.com/2008/12/instance-variable-to-synthesized.html>
  * <http://allancraig.net/blog/?p=315> 
  * <http://github.com/wookay/da/blob/b1190cd83df5700b0b6035eef2959c7968bde488/ruby/xcode/property_automation.rb>
+
+Known Bugs and Problems
+-----------------------
+
+ * With Snow Leopard MacOS X 10.6 the 'osascript' helper, which is used for XCode integration, might throw some
+   errors. Just ignore it until it is solved by Adobe or Apple, it does not affect xobjs. 
+   Here is a related discussion on the problem http://forums.adobe.com/message/2225116
