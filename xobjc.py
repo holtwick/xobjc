@@ -74,7 +74,7 @@ rxviewdidunload = re.compile("""
 rxunloadstuff = re.compile("""
 \[\s*super\s+viewDidUnload\s*\]\s*\;
 |
-self\.[a-zA-Z0-9_]+ \s* \= \s* nil \s* \;
+self\.[a-zA-Z0-9_]+ \s* \= \s* XNIL \s* \;
 """, re.VERBOSE|re.M|re.DOTALL)
 
 rxvars = re.compile("""
@@ -228,9 +228,10 @@ def analyze(hdata, mdata):
                     block.append("@synthesize %s = %s;" % (pvname, vname))
                 else:
                     block.append("@synthesize %s;" % (vname))
-                viewdidunload.append("    self.%s = nil;" % pvname)
             if mode not in ('xassign'):
                 dealloc.append("    [%s release];" % vname)
+            if mode.endswith('iboutlet'):
+                viewdidunload.append("    self.%s = XNIL;" % pvname)
                 
         body = rxsyn.sub('',  m.group("body")).strip()
         block = '\n\n' + "\n".join(block) + '\n\n'

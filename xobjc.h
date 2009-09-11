@@ -11,3 +11,6 @@
 #define XATOMIC 
 #define XREADONLY
 #define XIBOUTLET
+
+#define XNIL nil
+
