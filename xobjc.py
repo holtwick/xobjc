@@ -18,6 +18,9 @@ CHANGELOG:
 - Dealloc can contain custom data
 - Adds missing dealloc correctly
 
+0.3 (2009-09-11)
+- viewDidUnload support
+
 """
 
 import re
@@ -57,6 +60,21 @@ rxdealloc = re.compile("""
 
 rxrelease = re.compile("""
 \[\s*[^\s]+\s+release\s*\]\s*\;
+""", re.VERBOSE|re.M|re.DOTALL)
+
+rxviewdidunload = re.compile("""
+\-\s*\(void\)\s*
+    viewDidUnload
+    \s*
+    \{
+    (?P<viewdidunloadbody> [^\}]*?)        
+    \}
+""", re.VERBOSE|re.M|re.DOTALL)
+
+rxunloadstuff = re.compile("""
+\[\s*super\s+viewDidUnload\s*\]\s*\;
+|
+self\.[a-zA-Z0-9_]+ \s* \= \s* nil \s* \;
 """, re.VERBOSE|re.M|re.DOTALL)
 
 rxvars = re.compile("""
@@ -195,6 +213,7 @@ def analyze(hdata, mdata):
         m = rxm.match(mdata)    
         #print m.groups()
     
+        viewdidunload = []
         dealloc = []       
         block = []    
     
@@ -202,17 +221,21 @@ def analyze(hdata, mdata):
             # print vname
             mode, type_ = vars[vname]
             vname = vname.lstrip('*')
+            pvname = vname
             if 1: # mode != 'iboutlet':  
                 if vname.endswith('_'):
-                    block.append("@synthesize %s = %s;" % ( vname[:-1], vname))
+                    pvname = vname[:-1]
+                    block.append("@synthesize %s = %s;" % (pvname, vname))
                 else:
                     block.append("@synthesize %s;" % (vname))
+                viewdidunload.append("    self.%s = nil;" % pvname)
             if mode not in ('xassign'):
                 dealloc.append("    [%s release];" % vname)
                 
         body = rxsyn.sub('',  m.group("body")).strip()
         block = '\n\n' + "\n".join(block) + '\n\n'
                 
+        # dealloc
         md = rxdealloc.search(body)
         if md:
             deallocbody = rxrelease.sub('', md.group("deallocbody")).strip()     
@@ -223,7 +246,16 @@ def analyze(hdata, mdata):
         else:
             newdealloc =  "- (void)dealloc{\n" + "\n".join(dealloc) + "\n    [super dealloc];\n}" 
             body += "\n\n" + newdealloc  
-                
+
+        # viewdidunload
+        md = rxviewdidunload.search(body)
+        if md:
+            viewdidunloadbody = rxunloadstuff.sub('', md.group("viewdidunloadbody")).strip()     
+            if viewdidunloadbody:
+                viewdidunloadbody = "\n    " + viewdidunloadbody + "\n\n"
+            newviewdidunloadbody =  "- (void)viewDidUnload{\n    [super viewDidUnload];\n" + viewdidunloadbody + "\n".join(viewdidunload) + "\n}" 
+            body = rxviewdidunload.sub(newviewdidunloadbody, body)
+       
         mdata = mdata[:m.start('body')] + block + body + '\n\n' + mdata[m.end('body'):] 
         
     return hdata, mdata
