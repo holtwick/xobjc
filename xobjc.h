@@ -14,3 +14,16 @@
 
 #define XNIL nil
 
+#define XPRIVATE
+#define XPUBLIC
+
+#define XINSTANCE(klass) \
++ (id)instance { \
+  static klass *instance = nil; \
+  @synchronized (self) { \
+    if (!instance) { \
+        instance = [[[klass alloc] init] autorelease]; \
+    } \
+  } \
+  return instance; \
+}

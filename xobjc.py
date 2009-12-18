@@ -1,13 +1,26 @@
 #!/usr/bin/env python
+# -*- coding: UTF-8 -*-
 
 """
-TODO:
+Copyright (c) 2009 Dirk Holtwick <http://www.holtwick.it>
 
-- ATOMIC
-- ViewDidUnload
-- Readonly
-- Work with more implementations etc. in one file and match name
-- Create properties and synthesize in order the are defined in var block
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
 
 CHANGELOG:
 
@@ -21,6 +34,20 @@ CHANGELOG:
 0.3 (2009-09-11)
 - viewDidUnload support
 
+0.4 (2009-12-18)
+- Joined with version of 'freewizard' with leading underscore support
+- Some refactoring to make the source more readable
+- Added XPUBLIC to mark public methods
+- Alphabetical sorting of blocks
+- Added MIT license
+
+TODO:
+
+- ATOMIC
+- Readonly
+- Work with more implementations etc. in one file and match name
+- NSCoder support
+- XPRIVATE
 """
 
 import re
@@ -30,54 +57,54 @@ import shutil
 import pprint
 import datetime
 
-rxh = re.compile("""
-.*?
-@interface .*? 
-\{ 
-(?P<varblock> .*?)
-\}
-(?P<properties> .*?)
-@end
-.*?
-""", re.VERBOSE|re.M|re.DOTALL)
-
-rxm = re.compile("""
-.*?
-\@implementation\s+[a-zA-Z0-9_]+
-(?P<body> .*?)
-\@end
-""", re.VERBOSE|re.M|re.DOTALL)
-
-rxdealloc = re.compile("""
-\-\s*\(void\)\s*
-    dealloc
-    \s*
-    \{
-    (?P<deallocbody> .*?)    
-    \[\s*super\s+dealloc\s*\]\s*\;\s*
+rxInterface = re.compile("""
+    .*?
+    @interface .*? 
+    \{ 
+    (?P<varblock> .*?)
     \}
-""", re.VERBOSE|re.M|re.DOTALL)
+    (?P<properties> .*?)
+    @end
+    .*?
+    """, re.VERBOSE | re.M | re.DOTALL)
 
-rxrelease = re.compile("""
-\[\s*[^\s]+\s+release\s*\]\s*\;
-""", re.VERBOSE|re.M|re.DOTALL)
+rxImplementation = re.compile("""
+    .*?
+    \@implementation\s+(?P<name>[a-zA-Z0-9_]+)
+    (?P<body> .*?)
+    \@end
+    """, re.VERBOSE | re.M | re.DOTALL)
+
+rxDealloc = re.compile("""
+    \-\s*\(void\)\s*
+        dealloc
+        \s*
+        \{
+        (?P<deallocbody> .*?)    
+        \[\s*super\s+dealloc\s*\]\s*\;\s*
+        \}
+    """, re.VERBOSE | re.M | re.DOTALL)
+
+rxRelease = re.compile("""
+    \[\s*[^\s]+\s+release\s*\]\s*\;\s*$
+    """, re.VERBOSE | re.M | re.DOTALL)
 
 rxviewdidunload = re.compile("""
-\-\s*\(void\)\s*
-    viewDidUnload
-    \s*
-    \{
-    (?P<viewdidunloadbody> [^\}]*?)        
-    \}
-""", re.VERBOSE|re.M|re.DOTALL)
+    \-\s*\(void\)\s*
+        viewDidUnload
+        \s*
+        \{
+        (?P<viewdidunloadbody> [^\}]*?)        
+        \}
+    """, re.VERBOSE | re.M | re.DOTALL)
 
-rxunloadstuff = re.compile("""
-\[\s*super\s+viewDidUnload\s*\]\s*\;
-|
-self\.[a-zA-Z0-9_]+ \s* \= \s* XNIL \s* \;
-""", re.VERBOSE|re.M|re.DOTALL)
+rxViewDidUnload = re.compile("""
+    \[\s*super\s+viewDidUnload\s*\]\s*\;
+    |
+    self\.[a-zA-Z0-9_]+ \s* \= \s* XNIL \s* \;
+    """, re.VERBOSE | re.M | re.DOTALL)
 
-rxvars = re.compile("""
+rxVariables = re.compile("""
     (XCOPY | XASSIGN | XRETAIN | XATOMIC | XREADONLY | XIBOUTLET | IBOutlet)
     \s+
     ([a-zA-Z0-9_][a-zA-Z0-9_\<\>]*)
@@ -91,9 +118,9 @@ rxvars = re.compile("""
         \s*
     )+)
     \;
-""", re.VERBOSE|re.M|re.DOTALL)
+    """, re.VERBOSE | re.M | re.DOTALL)
 
-rxproperties = re.compile("""
+rxProperty = re.compile("""
     \@property  
     
     \s*
@@ -126,9 +153,9 @@ rxproperties = re.compile("""
     )+)
     \;
     
-""", re.VERBOSE|re.M|re.DOTALL)
+""", re.VERBOSE | re.M | re.DOTALL)
 
-rxsyn =  re.compile("""
+rxSynthesize = re.compile("""
     \@synthesize
     \s+
     \w+       
@@ -137,7 +164,24 @@ rxsyn =  re.compile("""
     \s*
     \w*
     \;    
-""", re.VERBOSE|re.M|re.DOTALL)
+    """, re.VERBOSE | re.M | re.DOTALL)
+
+rxLeadingUnderscore = re.compile("(\s*\*?\s*)_(.+)")
+
+rxMethod = re.compile("""
+    (?P<kind>
+        XPUBLIC
+    )     
+    \s*
+    (?P<name>
+        [\-\+] 
+        \s*    
+        .+?
+    ) 
+    \s*        
+    \{ 
+        
+""", re.VERBOSE | re.M | re.DOTALL)
 
 class Module:
     
@@ -154,122 +198,126 @@ def insertString(base, pos, new):
 
 def analyze(hdata, mdata):
     
-    # HEADER
-    
+    ### HEADER
+        
     vars = dict()
-    m = rxh.match(hdata)
-    varblock = m.group("varblock").strip()
-    properties = m.group("properties")    
+    interfaceMatch = rxInterface.match(hdata)
+    varblock = interfaceMatch.group("varblock").strip()
+    properties = interfaceMatch.group("properties")    
     if varblock and properties:
         
-        # Analyze variable definitions
-        # print repr(varblock.strip())        
-        for mv in rxvars.finditer(varblock):                        
+        # Collect variable definitions
+        for mv in rxVariables.finditer(varblock):                        
             mode, type_, names, names_ = mv.groups()
-            # print mode, type_, extractVariables(names)
             for vname in extractVariables(names):
                 vars[vname] = (mode.lower(), type_)    
-        # pprint.pprint(vars)
+        
+        # Remove @properties completely        
+        properties = rxProperty.sub('', properties).lstrip()
                 
-        # Analyze property definitions
-        if 0:
-            print repr(properties.strip())
-            for mp in rxproperties.finditer(properties):
-                mode, mode1, mode2, type_, names, names_ = mp.groups()            
-                for vname in extractVariables(names):
-                    if vname in vars:
-                        del vars[vname]
-        else:
-            properties = rxproperties.sub('', properties).lstrip()
-                
-        # Create missing properties
-        # print
-        # pprint.pprint(vars)
-        block = []    
-        for vname in sorted(vars.keys()):
-            # print vname
+        # Create missing @properties
+        propBlock = []    
+        for vname in sorted(vars.keys(), key=lambda k:k.strip('_')):
             mode, type_ = vars[vname]
-            if 1: #mode != 'iboutlet':   
-                if vname.endswith('_'):
-                    vname = vname[:-1]
-                if mode == 'iboutlet':
-                    mode = 'retain'
-                elif mode == 'xiboutlet':
-                    mode = "retain"
-                    type_ = "IBOutlet %s" % type_
-                else:
-                    mode = mode[1:]                
-                block.append("@property (nonatomic, %s) %s %s;" % (mode, type_, vname))
-        block = "\n".join(block)        
+            vnamem = rxLeadingUnderscore.match(vname)
+            if vname.endswith('_'):
+                vname = vname[:-1]
+            elif vnamem:
+                vname = vnamem.group(1) + vnamem.group(2)
+            if mode == 'iboutlet':
+                mode = 'retain'
+            elif mode == 'xiboutlet':
+                mode = "retain"
+                type_ = "IBOutlet %s" % type_
+            else:
+                mode = mode[1:]                
+            propBlock.append("@property (nonatomic, %s) %s %s;" % (mode, type_, vname))
+        propBlock = "\n".join(propBlock)        
+                 
+                 
+        ### MODULE
+
+        # Find implementation blinterfaceMatch       
+        implementationMatch = rxImplementation.match(mdata)    
+        impName = implementationMatch.group('name')
         
-        hdata = hdata[:m.start("properties")] + '\n\n' + block + '\n\n' + properties + hdata[m.end("properties"):]
-        # print hdata
-        
-        # print "=" * 60
-         
-        # MODULE
-    
-        # print mdata
-        m = rxm.match(mdata)    
-        #print m.groups()
-    
         viewdidunload = []
         dealloc = []       
         block = []    
     
-        for vname in sorted(vars.keys()):
+        # Create @synthesize block
+        for vname in sorted(vars.keys(), key=lambda k:k.strip('_')):
             # print vname
             mode, type_ = vars[vname]
             vname = vname.lstrip('*')
             pvname = vname
-            if 1: # mode != 'iboutlet':  
-                if vname.endswith('_'):
-                    pvname = vname[:-1]
-                    block.append("@synthesize %s = %s;" % (pvname, vname))
-                else:
-                    block.append("@synthesize %s;" % (vname))
+            if vname.endswith('_'):
+                pvname = vname[:-1]
+                block.append("@synthesize %s = %s;" % (pvname, vname))
+            elif vname.startswith('_'):
+                pvname = vname[1:]
+                block.append("@synthesize %s = %s;" % (pvname, vname))
+            else:
+                block.append("@synthesize %s;" % (vname))
             if mode not in ('xassign'):
                 dealloc.append("    [%s release];" % vname)
             if mode.endswith('iboutlet'):
                 viewdidunload.append("    self.%s = XNIL;" % pvname)
-                
-        body = rxsyn.sub('',  m.group("body")).strip()
+        
+        # Replace @synthesize block 
+        body = rxSynthesize.sub('', implementationMatch.group("body")).strip()
         block = '\n\n' + "\n".join(block) + '\n\n'
                 
-        # dealloc
-        md = rxdealloc.search(body)
+        # Update 'dealloc'
+        md = rxDealloc.search(body)
         if md:
-            deallocbody = rxrelease.sub('', md.group("deallocbody")).strip()     
+            deallocbody = rxRelease.sub('', md.group("deallocbody")).strip()     
             if deallocbody:
                 deallocbody = "    " + deallocbody + "\n\n"
-            newdealloc =  "- (void)dealloc{\n" + deallocbody + "\n".join(dealloc) + "\n    [super dealloc];\n}" 
-            body = rxdealloc.sub(newdealloc, body)
+            newdealloc = "- (void)dealloc{\n" + deallocbody + "\n".join(sorted(dealloc)) + "\n    [super dealloc];\n}"
+            body = rxDealloc.sub(newdealloc, body)
         else:
-            newdealloc =  "- (void)dealloc{\n" + "\n".join(dealloc) + "\n    [super dealloc];\n}" 
+            newdealloc = "- (void)dealloc{\n" + "\n".join(sorted(dealloc)) + "\n    [super dealloc];\n}" 
             body += "\n\n" + newdealloc  
 
-        # viewdidunload
+        # Update 'viewDidUnload' (iPhone only)
         md = rxviewdidunload.search(body)
         if md:
-            viewdidunloadbody = rxunloadstuff.sub('', md.group("viewdidunloadbody")).strip()     
+            viewdidunloadbody = rxViewDidUnload.sub('', md.group("viewdidunloadbody")).strip()     
             if viewdidunloadbody:
                 viewdidunloadbody = "\n    " + viewdidunloadbody + "\n\n"
-            newviewdidunloadbody =  "- (void)viewDidUnload{\n    [super viewDidUnload];\n" + viewdidunloadbody + "\n".join(viewdidunload) + "\n}" 
+            newviewdidunloadbody = "- (void)viewDidUnload{\n    [super viewDidUnload];\n" + viewdidunloadbody + "\n".join(sorted(viewdidunload)) + "\n}" 
             body = rxviewdidunload.sub(newviewdidunloadbody, body)
-       
-        mdata = mdata[:m.start('body')] + block + body + '\n\n' + mdata[m.end('body'):] 
+              
+        ### METHODS
+        mDefs = []
+        for mMethod in rxMethod.finditer(body):
+             if mMethod.group('kind') == 'XPUBLIC':
+                 mDefs.append(mMethod.group('name') + ';')
         
+        # If no XPUBLIC was defined don't replace old stuff
+        if mDefs:
+            mDefs = "\n".join(sorted(mDefs)) + '\n\n'
+        else:
+            mDefs = properties       
+              
+        ### RESULT
+       
+        hdata = hdata[:interfaceMatch.start("properties")] + '\n\n' + propBlock + '\n\n' + mDefs + hdata[interfaceMatch.end("properties"):]
+        mdata = mdata[:implementationMatch.start('body')] + block + body + '\n\n' + mdata[implementationMatch.end('body'):] 
+
     return hdata, mdata
 
 def modifyFiles(filename):
-    # Calc filename
+    
+    # Calculate basic filenames
     base = os.path.normpath(os.path.abspath(filename))
     folder = os.path.dirname(base)
     filePart = os.path.basename(base)
     hfile = filename[:filename.rfind(".")] + '.h'
     mfile = filename[:filename.rfind(".")] + '.m'
     
-    # Check files
+    # Check if files exist
     if not os.path.isfile(hfile):
         print "File %r does not exist" % hfile
         return
@@ -284,16 +332,16 @@ def modifyFiles(filename):
     shutil.copyfile(mfile, os.path.join(backupFolder, filePart[:-2] + '.m'))
     print "Created backup of files in %r" % backupFolder
 
-    # Convert
+    # Handle and modify files
     hdata, mdata = analyze(
-        open(hfile).read(), 
+        open(hfile).read(),
         open(mfile).read())    
     open(hfile, 'w').write(hdata)
     open(mfile, 'w').write(mdata)
     print "Modified %r" % hfile
     print "Modified %r" % mfile
     
-if __name__=="__main__":
+if __name__ == "__main__":
     import sys
         
     # You can also place it into 'XCode User Scripts' but it does not relead the window yet
@@ -311,7 +359,7 @@ if __name__=="__main__":
         subprocess.call(['osascript', '-e', 'activate application "XCode"'])
 
     else:
-        if len(sys.argv)!=2:
+        if len(sys.argv) != 2:
             print "Usage: xobjc.py [filename]"
         else:
             modifyFiles(sys.argv[1])
