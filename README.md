@@ -7,7 +7,10 @@ the ``@property`` and ``@synthesize`` stuff. It also updates the ``dealloc`` met
 your objects. And you can define the attributes according to the 
 [Google Objective-C Styleguide](http://google-styleguide.googlecode.com/svn/trunk/objcguide.xml#Variable_Name) 
 using a trailing underscore, i.e. your public attribute is then defined 
-without this underscore.
+without this underscore. But also a leading underscore is ok. Public method can easyly be defined by
+prepending XPUBLIC in the implementation part.
+
+No more redundancies and nonsense typing orgies! You'll save a lot of time!
 
 Preparations
 ------------
@@ -25,7 +28,7 @@ You have to define some helpers in your code that will indicate your properties
 Your code
 ---------
 
-In your header file mark you properties like this
+In your header file mark you properties like this:
 
 	#import <UIKit/UIKit.h>
 	#import "xobjc.h"
@@ -42,6 +45,11 @@ In your header file mark you properties like this
 
 	@end
 
+In your module file you can mark public methods like this:
+
+	XPUBLIC
+	- (void)somePubMethod { /* ... */ }
+
 Usage
 -----
 
@@ -56,9 +64,9 @@ Example
 
 Some pictures say more than thousand words. Here is a before/after diff showing the magic:
 
-![Header](http://mail.holtwick.it/xobjc/demo-h.png "Header")
+![Header](http://mail.holtwick.it/xobjc/demo-h.PNG "Header")
 
-![Module](http://mail.holtwick.it/xobjc/demo-m.png "Module")
+![Module](http://mail.holtwick.it/xobjc/demo-m.PNG "Module")
 
 XCode Integration
 -----------------

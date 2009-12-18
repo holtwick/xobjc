@@ -217,7 +217,7 @@ def analyze(hdata, mdata):
                 
         # Create missing @properties
         propBlock = []    
-        for vname in sorted(vars.keys(), key=lambda k:k.strip('_')):
+        for vname in sorted(vars.keys(), key=lambda k:k.strip('*').strip('_')):
             mode, type_ = vars[vname]
             vnamem = rxLeadingUnderscore.match(vname)
             if vname.endswith('_'):
@@ -246,7 +246,7 @@ def analyze(hdata, mdata):
         block = []    
     
         # Create @synthesize block
-        for vname in sorted(vars.keys(), key=lambda k:k.strip('_')):
+        for vname in sorted(vars.keys(), key=lambda k:k.strip('*').strip('_')):
             # print vname
             mode, type_ = vars[vname]
             vname = vname.lstrip('*')
