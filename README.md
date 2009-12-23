@@ -1,11 +1,11 @@
 xobjc
 =====
 
-**See the introduction video here http://mov.io/fE .**
+**See the introduction video here [mov.io/fE](http://mov.io/fE).**
 
 <div>
 	<iframe src='http://mov.io/go/showvideo/player/fE?autoplay=false' width='430' height='391' scrolling='no' frameborder='0'></iframe>
-<div>
+</div>
 	
 A tool for making annoying every day tasks for Objective-C developers, especially
 iPhone developers, easier. Therefore this tool will help you writing semi-automatically
