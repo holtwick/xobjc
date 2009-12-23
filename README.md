@@ -1,15 +1,19 @@
 xobjc
 =====
 
-<iframe src='http://mov.io/go/showvideo/player/fE?autoplay=false' width='430' height='391' scrolling='no' frameborder='0'></iframe>
+**See the introduction video here http://mov.io/fE .**
 
+<div>
+	<iframe src='http://mov.io/go/showvideo/player/fE?autoplay=false' width='430' height='391' scrolling='no' frameborder='0'></iframe>
+<div>
+	
 A tool for making annoying every day tasks for Objective-C developers, especially
 iPhone developers, easier. Therefore this tool will help you writing semi-automatically
 the ``@property`` and ``@synthesize`` stuff. It also updates the ``dealloc`` method to release
 your objects. And you can define the attributes according to the 
 [Google Objective-C Styleguide](http://google-styleguide.googlecode.com/svn/trunk/objcguide.xml#Variable_Name) 
 using a trailing underscore, i.e. your public attribute is then defined 
-without this underscore. But also a leading underscore is ok. Public method can easyly be defined by
+without this underscore. But also a leading underscore is ok. Public method can easily be defined by
 prepending XPUBLIC in the implementation part.
 
 No more redundancies and nonsense typing orgies! You'll save a lot of time!
@@ -89,5 +93,5 @@ Known Bugs and Problems
 -----------------------
 
  * With Snow Leopard MacOS X 10.6 the 'osascript' helper, which is used for XCode integration, might throw some
-   errors. Just ignore it until it is solved by Adobe or Apple, it does not affect xobjs. 
+   errors. Just ignore it until it is solved by Adobe or Apple, it does not affect xobjc. 
    Here is a related discussion on the problem http://forums.adobe.com/message/2225116
