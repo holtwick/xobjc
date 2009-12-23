@@ -1,4 +1,11 @@
+/*
+ 
+ Apply `xobjc` to this file to see the effect 
+ 
+ */
+
 #import <UIKit/UIKit.h>
+#import "xobjc.h"
 
 @interface DemoViewController : UIViewController {
     XIBOUTLET UILabel *header_;
@@ -9,14 +16,5 @@
     XCOPY NSString *secretKey_;
     int age;
 }
-
-@property (nonatomic, assign) int counter;
-@property (nonatomic, assign) id delegate;
-@property (nonatomic, retain) IBOutlet UILabel *header;
-@property (nonatomic, retain) NSArray *listOfUsers;
-@property (nonatomic, retain) IBOutlet UITextView *message;
-@property (nonatomic, copy) NSString *secretKey;
-
-- (IBAction)doSomething:(id)sender;
 
 @end
