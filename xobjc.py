@@ -328,14 +328,13 @@ def analyze(hdata, mdata):
    
     hdata = (hdata[:interfaceMatch.start("properties")] 
         + ('\n\n' + propBlock).rstrip() 
-        + ('\n\n' + mDefs)      
-        + hdata[interfaceMatch.end("properties"):])
+        + ('\n\n' + mDefs).rstrip()              
+        + '\n\n' + hdata[interfaceMatch.end("properties"):])
         
     mdata = (mdata[:implementationMatch.start('body')] 
         + ('\n\n' + block).rstrip() 
-        + body 
-        + '\n\n' 
-        + mdata[implementationMatch.end('body'):]) 
+        + ('\n\n' + body).rstrip() 
+        + '\n\n' + mdata[implementationMatch.end('body'):]) 
 
     return hdata, mdata
 
