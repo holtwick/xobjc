@@ -41,6 +41,13 @@ CHANGELOG:
 - Alphabetical sorting of blocks
 - Added MIT license
 
+0.5 (2010-01-05)
+- More refactoring
+- Now work also when no properties are defined
+- Prefix XPUBLIC also in Interface file to prepare for more intelligent
+  handling of those marked methods in future
+- Removed unsexy whitesapce 
+
 TODO:
 
 - ATOMIC
@@ -89,7 +96,7 @@ rxRelease = re.compile("""
     \[\s*[^\s]+\s+release\s*\]\s*\;\s*$
     """, re.VERBOSE | re.M | re.DOTALL)
 
-rxviewdidunload = re.compile("""
+rxViewDidUnload = re.compile("""
     \-\s*\(void\)\s*
         viewDidUnload
         \s*
@@ -98,7 +105,7 @@ rxviewdidunload = re.compile("""
         \}
     """, re.VERBOSE | re.M | re.DOTALL)
 
-rxViewDidUnload = re.compile("""
+rxViewDidUnloadBody = re.compile("""
     \[\s*super\s+viewDidUnload\s*\]\s*\;
     |
     self\.[a-zA-Z0-9_]+ \s* \= \s* XNIL \s* \;
@@ -183,6 +190,10 @@ rxMethod = re.compile("""
         
 """, re.VERBOSE | re.M | re.DOTALL)
 
+rxInstance = re.compile("""
+    XINSTANCE([^\s]+)
+""", re.VERBOSE | re.M | re.DOTALL)
+
 class Module:
     
     def __init__(filename):
@@ -204,107 +215,127 @@ def analyze(hdata, mdata):
     interfaceMatch = rxInterface.match(hdata)
     varblock = interfaceMatch.group("varblock").strip()
     properties = interfaceMatch.group("properties")    
-    if varblock and properties:
-        
-        # Collect variable definitions
-        for mv in rxVariables.finditer(varblock):                        
-            mode, type_, names, names_ = mv.groups()
-            for vname in extractVariables(names):
-                vars[vname] = (mode.lower(), type_)    
-        
-        # Remove @properties completely        
-        properties = rxProperty.sub('', properties).lstrip()
-                
-        # Create missing @properties
-        propBlock = []    
-        for vname in sorted(vars.keys(), key=lambda k:k.strip('*').strip('_')):
-            mode, type_ = vars[vname]
-            vnamem = rxLeadingUnderscore.match(vname)
-            if vname.endswith('_'):
-                vname = vname[:-1]
-            elif vnamem:
-                vname = vnamem.group(1) + vnamem.group(2)
-            if mode == 'iboutlet':
-                mode = 'retain'
-            elif mode == 'xiboutlet':
-                mode = "retain"
-                type_ = "IBOutlet %s" % type_
-            else:
-                mode = mode[1:]                
-            propBlock.append("@property (nonatomic, %s) %s %s;" % (mode, type_, vname))
-        propBlock = "\n".join(propBlock)        
-                 
-                 
-        ### MODULE
-
-        # Find implementation blinterfaceMatch       
-        implementationMatch = rxImplementation.match(mdata)    
-        impName = implementationMatch.group('name')
-        
-        viewdidunload = []
-        dealloc = []       
-        block = []    
     
-        # Create @synthesize block
-        for vname in sorted(vars.keys(), key=lambda k:k.strip('*').strip('_')):
-            # print vname
-            mode, type_ = vars[vname]
-            vname = vname.lstrip('*')
-            pvname = vname
-            if vname.endswith('_'):
-                pvname = vname[:-1]
-                block.append("@synthesize %s = %s;" % (pvname, vname))
-            elif vname.startswith('_'):
-                pvname = vname[1:]
-                block.append("@synthesize %s = %s;" % (pvname, vname))
-            else:
-                block.append("@synthesize %s;" % (vname))
-            if mode not in ('xassign'):
-                dealloc.append("    [%s release];" % vname)
-            if mode.endswith('iboutlet'):
-                viewdidunload.append("    self.%s = XNIL;" % pvname)
-        
-        # Replace @synthesize block 
-        body = rxSynthesize.sub('', implementationMatch.group("body")).strip()
-        block = '\n\n' + "\n".join(block) + '\n\n'
-                
-        # Update 'dealloc'
-        md = rxDealloc.search(body)
-        if md:
-            deallocbody = rxRelease.sub('', md.group("deallocbody")).strip()     
-            if deallocbody:
-                deallocbody = "    " + deallocbody + "\n\n"
-            newdealloc = "- (void)dealloc{\n" + deallocbody + "\n".join(sorted(dealloc)) + "\n    [super dealloc];\n}"
-            body = rxDealloc.sub(newdealloc, body)
+    # Collect variable definitions
+    for mv in rxVariables.finditer(varblock):                        
+        mode, type_, names, names_ = mv.groups()
+        for vname in extractVariables(names):
+            vars[vname] = (mode.lower(), type_)    
+    
+    # Remove @properties completely        
+    properties = rxProperty.sub('', properties).lstrip()
+            
+    # Create missing @properties
+    propBlock = []    
+    for vname in sorted(vars.keys(), key=lambda k:k.strip('*').strip('_')):
+        mode, type_ = vars[vname]
+        vnamem = rxLeadingUnderscore.match(vname)
+        if vname.endswith('_'):
+            vname = vname[:-1]
+        elif vnamem:
+            vname = vnamem.group(1) + vnamem.group(2)
+        if mode == 'iboutlet':
+            mode = 'retain'
+        elif mode == 'xiboutlet':
+            mode = "retain"
+            type_ = "IBOutlet %s" % type_
         else:
-            newdealloc = "- (void)dealloc{\n" + "\n".join(sorted(dealloc)) + "\n    [super dealloc];\n}" 
-            body += "\n\n" + newdealloc  
+            mode = mode[1:]                
+        propBlock.append("@property (nonatomic, %s) %s %s;" % (mode, type_, vname))
+    propBlock = "\n".join(propBlock)        
+             
+             
+    ### MODULE
 
-        # Update 'viewDidUnload' (iPhone only)
-        md = rxviewdidunload.search(body)
-        if md:
-            viewdidunloadbody = rxViewDidUnload.sub('', md.group("viewdidunloadbody")).strip()     
-            if viewdidunloadbody:
-                viewdidunloadbody = "\n    " + viewdidunloadbody + "\n\n"
-            newviewdidunloadbody = "- (void)viewDidUnload{\n    [super viewDidUnload];\n" + viewdidunloadbody + "\n".join(sorted(viewdidunload)) + "\n}" 
-            body = rxviewdidunload.sub(newviewdidunloadbody, body)
-              
-        ### METHODS
-        mDefs = []
-        for mMethod in rxMethod.finditer(body):
-             if mMethod.group('kind') == 'XPUBLIC':
-                 mDefs.append(mMethod.group('name') + ';')
-        
-        # If no XPUBLIC was defined don't replace old stuff
-        if mDefs:
-            mDefs = "\n".join(sorted(mDefs)) + '\n\n'
+    # Find implementation blinterfaceMatch       
+    implementationMatch = rxImplementation.match(mdata)    
+    impName = implementationMatch.group('name')
+    
+    viewdidunload = []
+    dealloc = []       
+    block = []    
+
+    # Create @synthesize block
+    for vname in sorted(vars.keys(), key=lambda k:k.strip('*').strip('_')):
+        # print vname
+        mode, type_ = vars[vname]
+        vname = vname.lstrip('*')
+        pvname = vname
+        if vname.endswith('_'):
+            pvname = vname[:-1]
+            block.append("@synthesize %s = %s;" % (pvname, vname))
+        elif vname.startswith('_'):
+            pvname = vname[1:]
+            block.append("@synthesize %s = %s;" % (pvname, vname))
         else:
-            mDefs = properties       
-              
-        ### RESULT
-       
-        hdata = hdata[:interfaceMatch.start("properties")] + '\n\n' + propBlock + '\n\n' + mDefs + hdata[interfaceMatch.end("properties"):]
-        mdata = mdata[:implementationMatch.start('body')] + block + body + '\n\n' + mdata[implementationMatch.end('body'):] 
+            block.append("@synthesize %s;" % (vname))
+        if mode not in ('xassign'):
+            dealloc.append("    [%s release];" % vname)
+        if mode.endswith('iboutlet'):
+            viewdidunload.append("    self.%s = XNIL;" % pvname)
+    
+    # Replace @synthesize block 
+    body = implementationMatch.group("body")
+    body = rxSynthesize.sub('', body).strip()
+    block = "\n".join(block) + '\n\n'
+            
+    # Update 'dealloc'
+    md = rxDealloc.search(body)
+    if md:
+        deallocbody = rxRelease.sub('', md.group("deallocbody")).strip()     
+        if deallocbody:
+            deallocbody = "    " + deallocbody + "\n\n"
+        newdealloc = ("- (void)dealloc{ "
+            + ("\n" + deallocbody).rstrip()
+            + ("\n" + "\n".join(sorted(dealloc))).rstrip()
+            + "\n    [super dealloc];\n}")
+        body = rxDealloc.sub(newdealloc, body)
+    else:
+        newdealloc = "- (void)dealloc{\n" + "\n".join(sorted(dealloc)) + "\n    [super dealloc];\n}" 
+        body += "\n\n" + newdealloc  
+
+    # Update 'viewDidUnload' (iPhone only)
+    md = rxViewDidUnload.search(body)
+    if md:
+        viewdidunloadbody = rxViewDidUnloadBody.sub('', md.group("viewdidunloadbody")).strip()     
+        if viewdidunloadbody:
+            viewdidunloadbody = "\n    " + viewdidunloadbody + "\n\n"
+        newviewdidunloadbody = (
+            "- (void)viewDidUnload{\n    [super viewDidUnload];\n" 
+            + viewdidunloadbody 
+            + "\n".join(sorted(viewdidunload)) 
+            + "\n}")
+        body = rxViewDidUnload.sub(newviewdidunloadbody, body)
+          
+    ### METHODS
+    mDefs = []        
+    for mMethod in rxMethod.finditer(body):
+        if mMethod.group('kind') == 'XPUBLIC':
+            mDefs.append('XPUBLIC ' + mMethod.group('name') + ';')
+    
+    ### XINSTANCE
+    mdi = rxInstance.search(body)
+    if mdi:
+        mDefs.append("XPUBLIC + (id)instance;")
+    
+    # If no XPUBLIC was defined don't replace old stuff
+    if mDefs:
+        mDefs = "\n".join(sorted(mDefs)) + '\n\n'
+    else:
+        mDefs = properties       
+          
+    ### RESULT
+   
+    hdata = (hdata[:interfaceMatch.start("properties")] 
+        + ('\n\n' + propBlock).rstrip() 
+        + ('\n\n' + mDefs)      
+        + hdata[interfaceMatch.end("properties"):])
+        
+    mdata = (mdata[:implementationMatch.start('body')] 
+        + ('\n\n' + block).rstrip() 
+        + body 
+        + '\n\n' 
+        + mdata[implementationMatch.end('body'):]) 
 
     return hdata, mdata
 
