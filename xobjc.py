@@ -48,6 +48,12 @@ CHANGELOG:
   handling of those marked methods in future
 - Removed unsexy whitesapce 
 
+0.6 (2010-01-6)
+- Removed the prepending XPUBLIC from interface file because Interface
+  Builder was not able to handle it  
+- IBAction methods are always considered public (I don't see a case where
+  they are not
+
 TODO:
 
 - ATOMIC
@@ -177,15 +183,16 @@ rxLeadingUnderscore = re.compile("(\s*\*?\s*)_(.+)")
 
 rxMethod = re.compile("""
     (?P<kind>
-        XPUBLIC
+        (XPUBLIC)?
     )     
     \s*
     (?P<name>
         [\-\+] 
         \s*    
-        .+?
+        \([^\)]+\)
+        \s*
+        [^\{]+?
     ) 
-    \s*        
     \{ 
         
 """, re.VERBOSE | re.M | re.DOTALL)
@@ -308,18 +315,24 @@ def analyze(hdata, mdata):
         body = rxViewDidUnload.sub(newviewdidunloadbody, body)
           
     ### METHODS
-    mDefs = []        
+    mDefs = []      
+    xpub = 0  
     for mMethod in rxMethod.finditer(body):
-        if mMethod.group('kind') == 'XPUBLIC':
-            mDefs.append('XPUBLIC ' + mMethod.group('name') + ';')
+        mName = mMethod.group('name').strip()
+        if (mMethod.group('kind') == 'XPUBLIC'):
+            xpub += 1
+            mDefs.append(mName + ';')
+        elif mName.lstrip('-').lstrip().startswith("(IBAction)"):            
+            mDefs.append(mName + ';')
     
     ### XINSTANCE
     mdi = rxInstance.search(body)
     if mdi:
-        mDefs.append("XPUBLIC + (id)instance;")
+        xpub += 1
+        mDefs.append("+ (id)instance;")
     
     # If no XPUBLIC was defined don't replace old stuff
-    if mDefs:
+    if mDefs: # and xpub:
         mDefs = "\n".join(sorted(mDefs)) + '\n\n'
     else:
         mDefs = properties       
