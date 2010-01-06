@@ -53,6 +53,7 @@ CHANGELOG:
   Builder was not able to handle it  
 - IBAction methods are always considered public (I don't see a case where
   they are not
+- Static methods are also considered public
 
 TODO:
 
@@ -322,7 +323,7 @@ def analyze(hdata, mdata):
         if (mMethod.group('kind') == 'XPUBLIC'):
             xpub += 1
             mDefs.append(mName + ';')
-        elif mName.lstrip('-').lstrip().startswith("(IBAction)"):            
+        elif mName.startswith("+") or mName.lstrip('-').lstrip().startswith("(IBAction)"):            
             mDefs.append(mName + ';')
     
     ### XINSTANCE
