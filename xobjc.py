@@ -71,6 +71,12 @@ import shutil
 import pprint
 import datetime
 
+### CONFIG BEGIN 
+
+BACKUP_FOLDER = 'BACKUP-XOBJC'
+ 
+### CONFIG END 
+
 rxInterface = re.compile("""
     .*?
     @interface .*? 
@@ -370,7 +376,7 @@ def modifyFiles(filename):
         return
     
     # Backup files
-    backupFolder = os.path.join(folder, '.xobjc-backup', 'backup-' + datetime.datetime.today().strftime("%Y%m%d-%H%M%S"))
+    backupFolder = os.path.join(folder, BACKUP_FOLDER, 'backup-' + datetime.datetime.today().strftime("%Y%m%d-%H%M%S"))
     os.makedirs(backupFolder)
     shutil.copyfile(hfile, os.path.join(backupFolder, filePart[:-2] + '.h'))
     shutil.copyfile(mfile, os.path.join(backupFolder, filePart[:-2] + '.m'))
@@ -398,9 +404,10 @@ if __name__ == "__main__":
         modifyFiles(filename)
 
         # Trick to reload files in XCode
+        # Bug workaround for SL, see http://kb2.adobe.com/cps/516/cpsid_51615.html
         import subprocess        
-        subprocess.call(['osascript', '-e', 'activate application "Finder"'])
-        subprocess.call(['osascript', '-e', 'activate application "XCode"'])
+        subprocess.call(['arch', '-i386', 'osascript', '-e', 'activate application "Finder"'])
+        subprocess.call(['arch', '-i386', 'osascript', '-e', 'activate application "XCode"'])
 
     else:
         if len(sys.argv) != 2:

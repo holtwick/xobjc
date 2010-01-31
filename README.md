@@ -85,6 +85,12 @@ are in the header or implementation file you like to become updated.
 Related
 -------
 
+Macro extensions for XCode
+
+ * [xcode-text-macros](http://github.com/liyanage/xcode-text-macros) 
+
+Similar approaches and discussions
+
  * <http://cocoawithlove.com/2008/12/instance-variable-to-synthesized.html>
  * <http://allancraig.net/blog/?p=315> 
  * <http://github.com/wookay/da/blob/b1190cd83df5700b0b6035eef2959c7968bde488/ruby/xcode/property_automation.rb>
@@ -92,6 +98,6 @@ Related
 Known Bugs and Problems
 -----------------------
 
- * With Snow Leopard MacOS X 10.6 the 'osascript' helper, which is used for XCode integration, might throw some
-   errors. Just ignore it until it is solved by Adobe or Apple, it does not affect xobjc. 
-   Here is a related discussion on the problem http://forums.adobe.com/message/2225116
+ * With Snow Leopard MacOS X 10.6 the 'osascript' helper, which is used for XCode integration, threw some
+   errors. I used a workaround I found here to circumvent the problem: http://kb2.adobe.com/cps/516/cpsid_51615.html
+   If you are using non Intel architecture or other OS you might need to modify this portion of code in xobjc.py
