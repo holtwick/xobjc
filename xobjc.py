@@ -48,12 +48,17 @@ CHANGELOG:
   handling of those marked methods in future
 - Removed unsexy whitesapce 
 
-0.6 (2010-01-6)
+0.6 (2010-01-06)
 - Removed the prepending XPUBLIC from interface file because Interface
   Builder was not able to handle it  
 - IBAction methods are always considered public (I don't see a case where
   they are not
 - Static methods are also considered public
+
+0.7 (2010-02-07)
+- Fix for Apple Script calls
+- Handle comment correctly
+- NEw FORCE_METHODS setting 
 
 TODO:
 
@@ -74,7 +79,9 @@ import datetime
 ### CONFIG BEGIN 
 
 BACKUP_FOLDER = 'BACKUP-XOBJC'
- 
+
+FORCE_METHODS = True
+
 ### CONFIG END 
 
 rxInterface = re.compile("""
@@ -208,12 +215,24 @@ rxInstance = re.compile("""
     XINSTANCE([^\s]+)
 """, re.VERBOSE | re.M | re.DOTALL)
 
+rxComment = re.compile("""
+   (
+    ^\s*\/\/.*?$
+    |
+    \/\*.*?\*\/
+   )
+""", re.VERBOSE | re.M | re.DOTALL)
+
+
 class Module:
     
     def __init__(filename):
         self.base = filename[:filename.rfind(".")]
         self.h = self.base + '.h'
         self.m = self.baee = ".m"
+
+def stripComments(value):
+    return rxComment.sub('', value)
 
 def extractVariables(data):
     return [x.strip() for x in data.strip().split(",")]
@@ -227,7 +246,7 @@ def analyze(hdata, mdata):
         
     vars = dict()
     interfaceMatch = rxInterface.match(hdata)
-    varblock = interfaceMatch.group("varblock").strip()
+    varblock = stripComments(interfaceMatch.group("varblock").strip())
     properties = interfaceMatch.group("properties")    
     
     # Collect variable definitions
@@ -324,7 +343,9 @@ def analyze(hdata, mdata):
     ### METHODS
     mDefs = []      
     xpub = 0  
-    for mMethod in rxMethod.finditer(body):
+    bodyStripped = stripComments(body)
+
+    for mMethod in rxMethod.finditer(bodyStripped):
         mName = mMethod.group('name').strip()
         if (mMethod.group('kind') == 'XPUBLIC'):
             xpub += 1
@@ -333,13 +354,13 @@ def analyze(hdata, mdata):
             mDefs.append(mName + ';')
     
     ### XINSTANCE
-    mdi = rxInstance.search(body)
+    mdi = rxInstance.search(bodyStripped)
     if mdi:
         xpub += 1
         mDefs.append("+ (id)instance;")
     
     # If no XPUBLIC was defined don't replace old stuff
-    if mDefs: # and xpub:
+    if mDefs or FORCE_METHODS:
         mDefs = "\n".join(sorted(mDefs)) + '\n\n'
     else:
         mDefs = properties       
@@ -376,7 +397,10 @@ def modifyFiles(filename):
         return
     
     # Backup files
-    backupFolder = os.path.join(folder, BACKUP_FOLDER, 'backup-' + datetime.datetime.today().strftime("%Y%m%d-%H%M%S"))
+    backupFolder = os.path.join(
+        folder, 
+        BACKUP_FOLDER, 
+        'backup-' + datetime.datetime.today().strftime("%Y%m%d-%H%M%S"))
     os.makedirs(backupFolder)
     shutil.copyfile(hfile, os.path.join(backupFolder, filePart[:-2] + '.h'))
     shutil.copyfile(mfile, os.path.join(backupFolder, filePart[:-2] + '.m'))
