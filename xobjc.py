@@ -60,6 +60,10 @@ CHANGELOG:
 - Handle comment correctly
 - NEw FORCE_METHODS setting 
 
+0.8 (2010-0215)
+- Moved @synthesize to the end of files
+- Moved @property to the end of files
+
 TODO:
 
 - ATOMIC
@@ -369,13 +373,13 @@ def analyze(hdata, mdata):
     ### RESULT
    
     hdata = (hdata[:interfaceMatch.start("properties")] 
-        + ('\n\n' + propBlock).rstrip() 
-        + ('\n\n' + mDefs).rstrip()              
+        + ('\n\n' + mDefs).rstrip()  
+        + ('\n\n' + propBlock).rstrip()             
         + '\n\n' + hdata[interfaceMatch.end("properties"):])
         
     mdata = (mdata[:implementationMatch.start('body')] 
-        + ('\n\n' + block).rstrip() 
         + ('\n\n' + body).rstrip() 
+        + ('\n\n' + block).rstrip() 
         + '\n\n' + mdata[implementationMatch.end('body'):]) 
 
     return hdata, mdata
