@@ -58,7 +58,7 @@ CHANGELOG:
 0.7 (2010-02-07)
 - Fix for Apple Script calls
 - Handle comment correctly
-- NEw FORCE_METHODS setting 
+- New FORCE_METHODS setting 
 
 0.8 (2010-02-15)
 - Moved @synthesize to the end of files
@@ -270,62 +270,72 @@ def analyze(hdata, mdata):
         for vname in extractVariables(names):
             vars[vname] = (mode.lower(), type_)    
     
-    # Remove @properties completely        
+    # Remove @properties completely from interface       
     properties = rxProperty.sub('', properties).lstrip()
             
-    # Create missing @properties
+    # Create @properties
     propBlock = []    
+    viewdidunload = []
+    dealloc = []       
+    block = []   
     for vname in sorted(vars.keys(), key=lambda k:k.strip('*').strip('_')):
         mode, type_ = vars[vname]
-        print mode, type_
-        vnamem = rxLeadingUnderscore.match(vname)
+        
+        iboutlet = 0
+        star = '*' if vname.startswith('*') else ''
+        name = vname.lstrip('*') # Withoout leading *
+        pvname = name # Without underscore
+        
+        # Google compatible synthesize
         if vname.endswith('_'):
-            vname = vname[:-1]
-        elif vnamem:
-            vname = vnamem.group(1) + vnamem.group(2)
+            pvname = name[:-1]
+            block.append("@synthesize %s = %s;" % (pvname, name))
+        elif vname.startswith('_'):
+            pvname = name[1:]
+            block.append("@synthesize %s = %s;" % (pvname, name))
+        else:
+            block.append("@synthesize %s;" % (name))
+            
+        # Properties
         if mode == 'iboutlet':
+            iboutlet = 1
             mode = 'retain'
+            propBlock.append("@property (nonatomic, %s) %s %s%s;" % (mode, type_, star, pvname))
         elif mode == 'xiboutlet':
+            iboutlet = 1
             mode = "retain"
             type_ = "IBOutlet %s" % type_
+            propBlock.append("@property (nonatomic, %s) %s %s%s;" % (mode, type_, star, pvname))
         elif mode.startswith('xproperty('):
-            propBlock.append("@property (%s) %s %s;" % (mode.strip()[10:-1], type_, vname))
-            continue    
+            pattr = mode.strip()[10:-1]
+            propBlock.append("@property (%s) %s %s%s;" % (pattr, type_, star, pvname))
+            mode = 'assign'
+            pattrlist = [x.strip().lower() for x in pattr.split(',')]
+            if 'retain' in pattrlist or 'copy' in pattrlist:
+                mode = 'retain'
         else:
-            mode = mode[1:]                
-        propBlock.append("@property (nonatomic, %s) %s %s;" % (mode, type_, vname))
+            mode = mode[1:]
+            propBlock.append("@property (nonatomic, %s) %s %s%s;" % (mode, type_, star, pvname))
+        
+        print mode 
+        
+        # Release stuff
+        if mode in ('retain', 'copy'):
+            dealloc.append("    [%s release];" % name)
+
+        if iboutlet:
+            viewdidunload.append("    self.%s = XNIL;" % pvname)
+
+    print viewdidunload
+    
     propBlock = "\n".join(propBlock)        
-                 
              
     ### MODULE
 
     # Find implementation blinterfaceMatch       
     implementationMatch = rxImplementation.match(mdata)    
     impName = implementationMatch.group('name')
-    
-    viewdidunload = []
-    dealloc = []       
-    block = []    
-
-    # Create @synthesize block
-    for vname in sorted(vars.keys(), key=lambda k:k.strip('*').strip('_')):
-        # print vname
-        mode, type_ = vars[vname]
-        vname = vname.lstrip('*')
-        pvname = vname
-        if vname.endswith('_'):
-            pvname = vname[:-1]
-            block.append("@synthesize %s = %s;" % (pvname, vname))
-        elif vname.startswith('_'):
-            pvname = vname[1:]
-            block.append("@synthesize %s = %s;" % (pvname, vname))
-        else:
-            block.append("@synthesize %s;" % (vname))
-        if mode not in ('xassign'):
-            dealloc.append("    [%s release];" % vname)
-        if mode.endswith('iboutlet'):
-            viewdidunload.append("    self.%s = XNIL;" % pvname)
-    
+        
     # Replace @synthesize block 
     body = implementationMatch.group("body")
     body = rxSynthesize.sub('', body).strip()
@@ -337,13 +347,13 @@ def analyze(hdata, mdata):
         deallocbody = rxRelease.sub('', md.group("deallocbody")).strip()     
         if deallocbody:
             deallocbody = "    " + deallocbody + "\n\n"
-        newdealloc = ("- (void)dealloc{ "
+        newdealloc = ("- (void)dealloc { "
             + ("\n" + deallocbody).rstrip()
             + ("\n" + "\n".join(sorted(dealloc))).rstrip()
             + "\n    [super dealloc];\n}")
         body = rxDealloc.sub(newdealloc, body)
     else:
-        newdealloc = "- (void)dealloc{\n" + "\n".join(sorted(dealloc)) + "\n    [super dealloc];\n}" 
+        newdealloc = "- (void)dealloc {\n" + "\n".join(sorted(dealloc)) + "\n    [super dealloc];\n}" 
         body += "\n\n" + newdealloc  
 
     # Update 'viewDidUnload' (iPhone only)
@@ -353,7 +363,7 @@ def analyze(hdata, mdata):
         if viewdidunloadbody:
             viewdidunloadbody = "\n    " + viewdidunloadbody + "\n\n"
         newviewdidunloadbody = (
-            "- (void)viewDidUnload{\n    [super viewDidUnload];\n" 
+            "- (void)viewDidUnload {\n    [super viewDidUnload];\n" 
             + viewdidunloadbody 
             + "\n".join(sorted(viewdidunload)) 
             + "\n}")
