@@ -60,17 +60,25 @@ CHANGELOG:
 - Handle comment correctly
 - NEw FORCE_METHODS setting 
 
-0.8 (2010-0215)
+0.8 (2010-02-15)
 - Moved @synthesize to the end of files
 - Moved @property to the end of files
 
+0.9 (2010-03-14)
+- Methods which start with 'initWith' are considered public
+- Added XPROPERTY(..) for individual property definitions, e.g.
+  XPROPERTY(readonly) id test;
+- Removed XATOMIC and XREADONLY
+
 TODO:
 
-- ATOMIC
-- Readonly
 - Work with more implementations etc. in one file and match name
-- NSCoder support
-- XPRIVATE
+  => Currently just one implementation per file
+- NSCoder support 
+  => Create all needed stuff
+- XPRIVATE 
+  => Put them into a category in the implementation file
+
 """
 
 import re
@@ -85,6 +93,8 @@ import datetime
 BACKUP_FOLDER = 'BACKUP-XOBJC'
 
 FORCE_METHODS = True
+
+DEBUG = 1
 
 ### CONFIG END 
 
@@ -136,7 +146,7 @@ rxViewDidUnloadBody = re.compile("""
     """, re.VERBOSE | re.M | re.DOTALL)
 
 rxVariables = re.compile("""
-    (XCOPY | XASSIGN | XRETAIN | XATOMIC | XREADONLY | XIBOUTLET | IBOutlet)
+    (XCOPY | XASSIGN | XRETAIN  | XIBOUTLET | IBOutlet | XPROPERTY\(.*?\))
     \s+
     ([a-zA-Z0-9_][a-zA-Z0-9_\<\>]*)
     \s+
@@ -158,13 +168,7 @@ rxProperty = re.compile("""
     
     (
         \( 
-        \s*
-        (copy | assign | retain | atomic | nonatomic)
-        \s*
-        \,?
-        \s*
-        (copy | assign | retain | atomic | nonatomic)?
-        \s*
+        .*?
         \)
     )?
     
@@ -202,7 +206,7 @@ rxLeadingUnderscore = re.compile("(\s*\*?\s*)_(.+)")
 rxMethod = re.compile("""
     (?P<kind>
         (XPUBLIC)?
-    )     
+    )  
     \s*
     (?P<name>
         [\-\+] 
@@ -221,13 +225,16 @@ rxInstance = re.compile("""
 """, re.VERBOSE | re.M | re.DOTALL)
 
 rxComment = re.compile("""
-   (
-    ^\s*\/\/.*?$
-    |
-    \/\*.*?\*\/
-   )
+    (
+        \/\*.*?\*\/
+        |
+        ^\s*\/\/.*?$
+    )
 """, re.VERBOSE | re.M | re.DOTALL)
 
+rxInitMethod = re.compile("""
+    \-\s*(.*?)\s*initWith.*
+""", re.VERBOSE | re.M | re.DOTALL)
 
 class Module:
     
@@ -237,6 +244,9 @@ class Module:
         self.m = self.baee = ".m"
 
 def stripComments(value):
+    if DEBUG: 
+        for c in rxComment.findall(value): 
+            print c
     return rxComment.sub('', value)
 
 def extractVariables(data):
@@ -267,6 +277,7 @@ def analyze(hdata, mdata):
     propBlock = []    
     for vname in sorted(vars.keys(), key=lambda k:k.strip('*').strip('_')):
         mode, type_ = vars[vname]
+        print mode, type_
         vnamem = rxLeadingUnderscore.match(vname)
         if vname.endswith('_'):
             vname = vname[:-1]
@@ -277,11 +288,14 @@ def analyze(hdata, mdata):
         elif mode == 'xiboutlet':
             mode = "retain"
             type_ = "IBOutlet %s" % type_
+        elif mode.startswith('xproperty('):
+            propBlock.append("@property (%s) %s %s;" % (mode.strip()[10:-1], type_, vname))
+            continue    
         else:
             mode = mode[1:]                
         propBlock.append("@property (nonatomic, %s) %s %s;" % (mode, type_, vname))
     propBlock = "\n".join(propBlock)        
-             
+                 
              
     ### MODULE
 
@@ -352,11 +366,17 @@ def analyze(hdata, mdata):
 
     for mMethod in rxMethod.finditer(bodyStripped):
         mName = mMethod.group('name').strip()
+        # if mMethod.group("comment"):
+        #    mName = "\n" + mMethod.group("comment").strip() + "\n" + mName
+        if DEBUG: 
+            print mName, mMethod.groups()
         if (mMethod.group('kind') == 'XPUBLIC'):
             xpub += 1
             mDefs.append(mName + ';')
         elif mName.startswith("+") or mName.lstrip('-').lstrip().startswith("(IBAction)"):            
             mDefs.append(mName + ';')
+        elif rxInitMethod.match(mName):
+            mDefs.append(mName + ';')        
     
     ### XINSTANCE
     mdi = rxInstance.search(bodyStripped)
@@ -366,7 +386,8 @@ def analyze(hdata, mdata):
     
     # If no XPUBLIC was defined don't replace old stuff
     if mDefs or FORCE_METHODS:
-        mDefs = "\n".join(sorted(mDefs)) + '\n\n'
+        # mDefs = "\n".join(sorted(mDefs)) + '\n\n'
+        mDefs = "\n".join(mDefs) + '\n\n'
     else:
         mDefs = properties       
           
