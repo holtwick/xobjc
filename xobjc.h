@@ -5,17 +5,16 @@
 //  Copyright holtwick.it 2009. All rights reserved.
 //
  
-#define XASSIGN
+
 #define XRETAIN 
-#define XCOPY 
-#define XATOMIC 
-#define XREADONLY
 #define XIBOUTLET
+#define XASSIGN
+#define XCOPY 
+#define XPROPERTY(...)
 
 #define XNIL nil
 
-#define XPRIVATE
-#define XPUBLIC
+#define XPUBLIC 
 
 #define XINSTANCE(klass) \
 + (id)instance { \
