@@ -24,12 +24,13 @@ Preparations
 You have to define some helpers in your code that will indicate your properties 
 (you can alternatively use ``xobjc.h`` from this package):
 
-    #define XASSIGN
     #define XRETAIN 
-    #define XCOPY 
-    #define XATOMIC 
-    #define XREADONLY
     #define XIBOUTLET
+    #define XASSIGN
+    #define XCOPY 
+    #define XPROPERTY(...)
+    #define XNIL nil
+    #define XPUBLIC 
 
 Your code
 ---------
@@ -46,6 +47,7 @@ In your header file mark you properties like this:
 	    XASSIGN int counter;    
 	    XRETAIN NSArray *listOfUsers_;    
 	    XCOPY NSString *secretKey_;
+        XPROPERTY(readonly) BOOL isPublic_; 
 	    int age;
 	}
 
@@ -55,6 +57,8 @@ In your module file you can mark public methods like this:
 
 	XPUBLIC
 	- (void)somePubMethod { /* ... */ }
+    
+(IBAction, class initializers and class methods are always considered public)
 
 Usage
 -----
