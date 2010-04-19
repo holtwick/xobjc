@@ -69,6 +69,7 @@ CHANGELOG:
 - Added XPROPERTY(..) for individual property definitions, e.g.
   XPROPERTY(readonly) id test;
 - Removed XATOMIC and XREADONLY
+- Code cleanup
 
 TODO:
 
@@ -91,10 +92,13 @@ import datetime
 ### CONFIG BEGIN 
 
 BACKUP_FOLDER = 'BACKUP-XOBJC'
-
 FORCE_METHODS = True
+DEBUG = 0
 
-DEBUG = 1
+try:
+    from xobjc_settings import *
+except:
+    pass
 
 ### CONFIG END 
 
@@ -317,7 +321,7 @@ def analyze(hdata, mdata):
             mode = mode[1:]
             propBlock.append("@property (nonatomic, %s) %s %s%s;" % (mode, type_, star, pvname))
         
-        print mode 
+        # print mode 
         
         # Release stuff
         if mode in ('retain', 'copy'):
@@ -326,7 +330,7 @@ def analyze(hdata, mdata):
         if iboutlet:
             viewdidunload.append("    self.%s = XNIL;" % pvname)
 
-    print viewdidunload
+    # print viewdidunload
     
     propBlock = "\n".join(propBlock)        
              
@@ -364,8 +368,8 @@ def analyze(hdata, mdata):
             viewdidunloadbody = "\n    " + viewdidunloadbody + "\n\n"
         newviewdidunloadbody = (
             "- (void)viewDidUnload {\n    [super viewDidUnload];\n" 
-            + viewdidunloadbody 
-            + "\n".join(sorted(viewdidunload)) 
+            + ("    " + viewdidunloadbody.strip()).rstrip() 
+            + ("\n" + "\n".join(sorted(viewdidunload))).rstrip() 
             + "\n}")
         body = rxViewDidUnload.sub(newviewdidunloadbody, body)
           
