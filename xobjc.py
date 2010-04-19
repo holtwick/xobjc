@@ -79,6 +79,7 @@ TODO:
   => Create all needed stuff
 - XPRIVATE 
   => Put them into a category in the implementation file
+- Support for categories
 
 """
 
@@ -291,10 +292,10 @@ def analyze(hdata, mdata):
         pvname = name # Without underscore
         
         # Google compatible synthesize
-        if vname.endswith('_'):
+        if name.endswith('_'):
             pvname = name[:-1]
             block.append("@synthesize %s = %s;" % (pvname, name))
-        elif vname.startswith('_'):
+        elif name.startswith('_'):
             pvname = name[1:]
             block.append("@synthesize %s = %s;" % (pvname, name))
         else:
@@ -360,7 +361,7 @@ def analyze(hdata, mdata):
         newdealloc = "- (void)dealloc {\n" + "\n".join(sorted(dealloc)) + "\n    [super dealloc];\n}" 
         body += "\n\n" + newdealloc  
 
-    # Update 'viewDidUnload' (iPhone only)
+    # Update 'viewDidUnload' (iPhone and iPad only)
     md = rxViewDidUnload.search(body)
     if md:
         viewdidunloadbody = rxViewDidUnloadBody.sub('', md.group("viewdidunloadbody")).strip()     
