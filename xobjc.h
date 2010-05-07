@@ -12,9 +12,14 @@
 #define XCOPY 
 #define XPROPERTY(...)
 
-#define XNIL nil
+#define xnil nil
+#define xrelease release
 
 #define XPUBLIC 
+
+// DEPRECATED!!!
+
+#define XNIL nil
 
 #define XINSTANCE(klass) \
 + (id)instance { \

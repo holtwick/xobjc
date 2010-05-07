@@ -127,12 +127,9 @@ rxDealloc = re.compile("""
         \s*
         \{
         (?P<deallocbody> .*?)    
+        (\[\s*[^\s]+\s+x?release\s*\]\s*\;\s*)*
         \[\s*super\s+dealloc\s*\]\s*\;\s*
         \}
-    """, re.VERBOSE | re.M | re.DOTALL)
-
-rxRelease = re.compile("""
-    \[\s*[^\s]+\s+release\s*\]\s*\;\s*$
     """, re.VERBOSE | re.M | re.DOTALL)
 
 rxViewDidUnload = re.compile("""
@@ -147,7 +144,7 @@ rxViewDidUnload = re.compile("""
 rxViewDidUnloadBody = re.compile("""
     \[\s*super\s+viewDidUnload\s*\]\s*\;
     |
-    self\.[a-zA-Z0-9_]+ \s* \= \s* XNIL \s* \;
+    self\.[a-zA-Z0-9_]+ \s* \= \s* (xnil|XNIL) \s* \;
     """, re.VERBOSE | re.M | re.DOTALL)
 
 rxVariables = re.compile("""
@@ -326,10 +323,10 @@ def analyze(hdata, mdata):
         
         # Release stuff
         if mode in ('retain', 'copy'):
-            dealloc.append("    [%s release];" % name)
+            dealloc.append("    [%s xrelease];" % name)
 
         if iboutlet:
-            viewdidunload.append("    self.%s = XNIL;" % pvname)
+            viewdidunload.append("    self.%s = xnil;" % pvname)
 
     # print viewdidunload
     
@@ -349,7 +346,8 @@ def analyze(hdata, mdata):
     # Update 'dealloc'
     md = rxDealloc.search(body)
     if md:
-        deallocbody = rxRelease.sub('', md.group("deallocbody")).strip()     
+        # deallocbody = rxRelease.sub('', md.group("deallocbody")).strip()     
+        deallocbody = md.group("deallocbody").strip()     
         if deallocbody:
             deallocbody = "    " + deallocbody + "\n\n"
         newdealloc = ("- (void)dealloc { "
