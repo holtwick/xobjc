@@ -71,6 +71,12 @@ CHANGELOG:
 - Removed XATOMIC and XREADONLY
 - Code cleanup
 
+0.10
+- Now also works as build script
+- Only handle files if different file times
+- Nonatomic can be turned of as default
+- Strip trailing spaces
+
 TODO:
 
 - Work with more implementations etc. in one file and match name
@@ -89,12 +95,18 @@ import os.path
 import shutil
 import pprint
 import datetime
+import subprocess
 
 ### CONFIG BEGIN 
 
+DEBUG = 0
+
 BACKUP_FOLDER = 'BACKUP-XOBJC'
 FORCE_METHODS = True
-DEBUG = 0
+STRIP_TRAILING_SPACES = True
+NONATOMIC = ""
+
+# NONATOMIC = "nonatomic, "
 
 try:
     from xobjc_settings import *
@@ -302,12 +314,12 @@ def analyze(hdata, mdata):
         if mode == 'iboutlet':
             iboutlet = 1
             mode = 'retain'
-            propBlock.append("@property (nonatomic, %s) %s %s%s;" % (mode, type_, star, pvname))
+            propBlock.append("@property (%s%s) %s %s%s;" % (NONATOMIC, mode, type_, star, pvname))
         elif mode == 'xiboutlet':
             iboutlet = 1
             mode = "retain"
             type_ = "IBOutlet %s" % type_
-            propBlock.append("@property (nonatomic, %s) %s %s%s;" % (mode, type_, star, pvname))
+            propBlock.append("@property (%s%s) %s %s%s;" % (NONATOMIC, mode, type_, star, pvname))
         elif mode.startswith('xproperty('):
             pattr = mode.strip()[10:-1]
             propBlock.append("@property (%s) %s %s%s;" % (pattr, type_, star, pvname))
@@ -317,7 +329,7 @@ def analyze(hdata, mdata):
                 mode = 'retain'
         else:
             mode = mode[1:]
-            propBlock.append("@property (nonatomic, %s) %s %s%s;" % (mode, type_, star, pvname))
+            propBlock.append("@property (%s%s) %s %s%s;" % (NONATOMIC, mode, type_, star, pvname))
         
         # print mode 
         
@@ -424,39 +436,80 @@ def modifyFiles(filename):
     base = os.path.normpath(os.path.abspath(filename))
     folder = os.path.dirname(base)
     filePart = os.path.basename(base)
+    
+    if filePart == "main.m":
+        # print "File %r will not be modified" % filePart
+        return False
+        
     hfile = filename[:filename.rfind(".")] + '.h'
     mfile = filename[:filename.rfind(".")] + '.m'
     
     # Check if files exist
     if not os.path.isfile(hfile):
-        print "File %r does not exist" % hfile
-        return
+        # print "File %r does not exist" % hfile
+        return False
     if not os.path.isfile(mfile):
-        print "File %r does not exist" % hfile
-        return
+        # print "File %r does not exist" % hfile
+        return False
     
+    htime = os.stat(hfile).st_mtime
+    mtime = os.stat(mfile).st_mtime
+    
+    if htime == mtime:
+        # print "No update needed"
+        return False
+
+    # Handle and modify files
+    hsrc = open(hfile).read()
+    msrc = open(mfile).read()
+    if ("noxobjc" in hsrc.lower()) or ("noxobjc" in msrc.lower()):
+        # print "File ignored"
+        return False
+
     # Backup files
     backupFolder = os.path.join(
         folder, 
         BACKUP_FOLDER, 
         'backup-' + datetime.datetime.today().strftime("%Y%m%d-%H%M%S"))
-    os.makedirs(backupFolder)
+    if not os.path.isdir(backupFolder):
+        os.makedirs(backupFolder)
     shutil.copyfile(hfile, os.path.join(backupFolder, filePart[:-2] + '.h'))
     shutil.copyfile(mfile, os.path.join(backupFolder, filePart[:-2] + '.m'))
-    print "Created backup of files in %r" % backupFolder
+    # print "Created backup of files in %r" % backupFolder
 
-    # Handle and modify files
+    # Handle and modify files    
     hdata, mdata = analyze(
-        open(hfile).read(),
-        open(mfile).read())    
-    open(hfile, 'w').write(hdata)
-    open(mfile, 'w').write(mdata)
-    print "Modified %r" % hfile
-    print "Modified %r" % mfile
+        hsrc,
+        msrc)    
     
+    if STRIP_TRAILING_SPACES:
+        hdata = "\n".join([l.rstrip() for l in hdata.splitlines()])
+        mdata = "\n".join([l.rstrip() for l in mdata.splitlines()])
+    
+    f = open(hfile, 'w')
+    f.write(hdata)
+    f.close()
+    
+    f = open(mfile, 'w')
+    f.write(mdata)
+    f.close()
+    
+    subprocess.call(['touch', hfile, mfile])
+    
+    #print "Modified %r" % hfile
+    #print "Modified %r" % mfile
+    return True
+    
+def xcodeReload():
+    # Trick to reload files in XCode
+    # Bug workaround for SL, see http://kb2.adobe.com/cps/516/cpsid_51615.html    
+    print "XCode refresh"        
+    subprocess.call(['arch', '-i386', 'osascript', '-e', 'activate application "Finder"\nactivate application "XCode"'])
+
 if __name__ == "__main__":
     import sys
-        
+    import glob
+    
     # You can also place it into 'XCode User Scripts' but it does not relead the window yet
     try:
         filename = '%%%{PBXFilePath}%%%'
@@ -465,15 +518,24 @@ if __name__ == "__main__":
     
     if filename and (not filename.startswith('%')):
         modifyFiles(filename)
-
-        # Trick to reload files in XCode
-        # Bug workaround for SL, see http://kb2.adobe.com/cps/516/cpsid_51615.html
-        import subprocess        
-        subprocess.call(['arch', '-i386', 'osascript', '-e', 'activate application "Finder"'])
-        subprocess.call(['arch', '-i386', 'osascript', '-e', 'activate application "XCode"'])
+        xcodeReload()
 
     else:
-        if len(sys.argv) != 2:
-            print "Usage: xobjc.py [filename]"
-        else:
+        
+        srcroot = os.environ.get("SRCROOT")
+        if srcroot:
+            modified = False
+            for fn in glob.glob("Classes/*.m"):
+                if modifyFiles(fn):
+                    print "Modified %r" % fn
+                    modified = True
+            if modified:
+                xcodeReload()
+            else:
+                print "No modifications needed"
+                
+        elif len(sys.argv) == 2:
             modifyFiles(sys.argv[1])
+            
+        else:
+            print "Usage: xobjc.py [filename]"
