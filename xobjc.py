@@ -119,9 +119,9 @@ except:
 
 rxInterface = re.compile("""
     .*?
-    @interface .*? 
-    \{ 
-    (?P<varblock> .*?)
+    @interface (?P<interface> .*?) 
+     \{
+    (?P<varblock> .*? )
     \}
     (?P<properties> .*?)
     @end
@@ -276,9 +276,14 @@ def analyze(hdata, mdata):
     ### HEADER
         
     vars = dict()
+    
     interfaceMatch = rxInterface.match(hdata)
-    varblock = stripComments(interfaceMatch.group("varblock").strip())
-    properties = interfaceMatch.group("properties")    
+    if not interfaceMatch:
+        # This is a category which has no varblock
+        return None, None
+        
+    varblock = interfaceMatch.group("varblock")    
+    varblock = stripComments(varblock.strip())
     
     # Collect variable definitions
     for mv in rxVariables.finditer(varblock):                        
@@ -286,7 +291,8 @@ def analyze(hdata, mdata):
         for vname in extractVariables(names):
             vars[vname] = (mode.lower(), type_)    
     
-    # Remove @properties completely from interface       
+    # Remove @properties completely from interface 
+    properties = interfaceMatch.group("properties")    
     properties = rxProperty.sub('', properties).lstrip()
             
     # Create @properties
@@ -431,7 +437,6 @@ def analyze(hdata, mdata):
         + '\n\n' + mdata[implementationMatch.end('body'):]) 
 
     # Did something change?
-    print "%r" % propBlock
     if xpub or propBlock:
         return hdata, mdata
         
