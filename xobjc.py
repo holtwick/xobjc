@@ -74,8 +74,10 @@ CHANGELOG:
 0.10
 - Now also works as build script
 - Only handle files if different file times
+- oNly change files that contain X... macros
 - Nonatomic can be turned of as default
 - Strip trailing spaces
+- Multiple file and path arguments
 
 TODO:
 
@@ -234,9 +236,9 @@ rxMethod = re.compile("""
         
 """, re.VERBOSE | re.M | re.DOTALL)
 
-rxInstance = re.compile("""
-    XINSTANCE([^\s]+)
-""", re.VERBOSE | re.M | re.DOTALL)
+#rxInstance = re.compile("""
+#    XINSTANCE([^\s]+)
+#""", re.VERBOSE | re.M | re.DOTALL)
 
 rxComment = re.compile("""
     (
@@ -404,10 +406,10 @@ def analyze(hdata, mdata):
             mDefs.append(mName + ';')        
     
     ### XINSTANCE
-    mdi = rxInstance.search(bodyStripped)
-    if mdi:
-        xpub += 1
-        mDefs.append("+ (id)instance;")
+    #mdi = rxInstance.search(bodyStripped)
+    #if mdi:
+    #    xpub += 1
+    #    mDefs.append("+ (id)instance;")
     
     # If no XPUBLIC was defined don't replace old stuff
     if mDefs or FORCE_METHODS:
@@ -428,7 +430,12 @@ def analyze(hdata, mdata):
         + ('\n\n' + block).rstrip() 
         + '\n\n' + mdata[implementationMatch.end('body'):]) 
 
-    return hdata, mdata
+    # Did something change?
+    print "%r" % propBlock
+    if xpub or propBlock:
+        return hdata, mdata
+        
+    return None, None
 
 def modifyFiles(filename):
     
@@ -466,6 +473,14 @@ def modifyFiles(filename):
         # print "File ignored"
         return False
 
+    # Handle and modify files    
+    hdata, mdata = analyze(
+        hsrc,
+        msrc)   
+             
+    if not (hdata and mdata):
+        return False
+        
     # Backup files
     backupFolder = os.path.join(
         folder, 
@@ -477,11 +492,7 @@ def modifyFiles(filename):
     shutil.copyfile(mfile, os.path.join(backupFolder, filePart[:-2] + '.m'))
     # print "Created backup of files in %r" % backupFolder
 
-    # Handle and modify files    
-    hdata, mdata = analyze(
-        hsrc,
-        msrc)    
-    
+
     if STRIP_TRAILING_SPACES:
         hdata = "\n".join([l.rstrip() for l in hdata.splitlines()])
         mdata = "\n".join([l.rstrip() for l in mdata.splitlines()])
@@ -494,10 +505,12 @@ def modifyFiles(filename):
     f.write(mdata)
     f.close()
     
+    # Same file time
     subprocess.call(['touch', hfile, mfile])
     
     #print "Modified %r" % hfile
     #print "Modified %r" % mfile
+    
     return True
     
 def xcodeReload():

@@ -17,17 +17,3 @@
 
 #define XPUBLIC 
 
-// DEPRECATED!!!
-
-#define XNIL nil
-
-#define XINSTANCE(klass) \
-+ (id)instance { \
-  static klass *instance = nil; \
-  @synchronized (self) { \
-    if (!instance) { \
-        instance = [[[klass alloc] init] autorelease]; \
-    } \
-  } \
-  return instance; \
-}
