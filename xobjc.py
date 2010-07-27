@@ -520,22 +520,38 @@ if __name__ == "__main__":
         modifyFiles(filename)
         xcodeReload()
 
-    else:
+    elif len(sys.argv) >= 2:
+        # srcroot = os.environ.get("SRCROOT")
         
-        srcroot = os.environ.get("SRCROOT")
-        if srcroot:
-            modified = False
-            for fn in glob.glob("Classes/*.m"):
-                if modifyFiles(fn):
-                    print "Modified %r" % fn
-                    modified = True
-            if modified:
-                xcodeReload()
-            else:
-                print "No modifications needed"
-                
-        elif len(sys.argv) == 2:
-            modifyFiles(sys.argv[1])
+        modified = False
+        for filename in sys.argv[1:]: 
+        
+            filename = os.path.abspath(filename)
+            # print "Analyze %s" % filename
             
+            mfiles = [filename] 
+            if os.path.isdir(filename):            
+                for root, dirs, files in os.walk(filename):
+                    for name in files:
+                        if (BACKUP_FOLDER not in root) and name.endswith(".m"):                        
+                            mfiles.append(os.path.join(root, name))
+        
+            # print "\n".join(mfiles)
+            
+            # elif srcroot:
+            #   files = glob.glob("Classes/*.m")
+
+            if mfiles:
+               
+                for fn in mfiles:
+                    if modifyFiles(fn):
+                        print "Modified %r" % fn
+                        modified = True
+        
+        if modified:
+            xcodeReload()
         else:
-            print "Usage: xobjc.py [filename]"
+            print "No modifications needed"
+            
+    else:
+        print "Usage: xobjc.py [file/folder paths]"
