@@ -78,6 +78,7 @@ CHANGELOG:
 - Nonatomic can be turned of as default
 - Strip trailing spaces
 - Multiple file and path arguments
+- Added XDELEGATE
 
 TODO:
 
@@ -162,7 +163,7 @@ rxViewDidUnloadBody = re.compile("""
     """, re.VERBOSE | re.M | re.DOTALL)
 
 rxVariables = re.compile("""
-    (XCOPY | XASSIGN | XRETAIN  | XIBOUTLET | IBOutlet | XPROPERTY\(.*?\))
+    (XCOPY | XASSIGN | XRETAIN  | XIBOUTLET | XDELEGATE | IBOutlet | XPROPERTY\(.*?\))
     \s+
     ([a-zA-Z0-9_][a-zA-Z0-9_\<\>]*)
     \s+
@@ -326,6 +327,11 @@ def analyze(hdata, mdata):
         elif mode == 'xiboutlet':
             iboutlet = 1
             mode = "retain"
+            type_ = "IBOutlet %s" % type_
+            propBlock.append("@property (%s%s) %s %s%s;" % (NONATOMIC, mode, type_, star, pvname))
+        elif mode == 'xdelegate':
+            iboutlet = 1
+            mode = "assign"
             type_ = "IBOutlet %s" % type_
             propBlock.append("@property (%s%s) %s %s%s;" % (NONATOMIC, mode, type_, star, pvname))
         elif mode.startswith('xproperty('):
