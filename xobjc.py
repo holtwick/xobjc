@@ -82,6 +82,7 @@ CHANGELOG:
 
 0.11
 - Fix: Can handle missing spaces around asterisk
+- External settings did not work, therefore removed
 
 TODO:
 
@@ -106,18 +107,12 @@ import subprocess
 ### CONFIG BEGIN 
 
 DEBUG = 0
-
-BACKUP_FOLDER = 'BACKUP-XOBJC'
-FORCE_METHODS = True
+# BACKUP_FOLDER = 'BACKUP-XOBJC'
+BACKUP_FOLDER = '/Users/dirk/work/_build/BACKUP-XOBJC'
+FORCE_METHODS = False #True
 STRIP_TRAILING_SPACES = True
 NONATOMIC = ""
-
 # NONATOMIC = "nonatomic, "
-
-try:
-    from xobjc_settings import *
-except:
-    pass
 
 ### CONFIG END 
 
