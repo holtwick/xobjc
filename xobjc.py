@@ -74,11 +74,14 @@ CHANGELOG:
 0.10
 - Now also works as build script
 - Only handle files if different file times
-- oNly change files that contain X... macros
+- Only change files that contain X... macros
 - Nonatomic can be turned of as default
 - Strip trailing spaces
 - Multiple file and path arguments
 - Added XDELEGATE
+
+0.11
+- Fix: Can handle missing spaces around asterisk
 
 TODO:
 
@@ -166,9 +169,12 @@ rxVariables = re.compile("""
     (XCOPY | XASSIGN | XRETAIN  | XIBOUTLET | XDELEGATE | IBOutlet | XPROPERTY\(.*?\))
     \s+
     ([a-zA-Z0-9_][a-zA-Z0-9_\<\>]*)
-    \s+
     ((        
-        \*?
+        (?:
+          \s*\* 
+          | 
+          \s
+        )
         \s*
         [a-zA-Z0-9_]+
         \s*
@@ -290,7 +296,7 @@ def analyze(hdata, mdata):
     for mv in rxVariables.finditer(varblock):                        
         mode, type_, names, names_ = mv.groups()
         for vname in extractVariables(names):
-            vars[vname] = (mode.lower(), type_)    
+            vars[''.join(vname.split())] = (mode.lower(), type_)    
     
     # Remove @properties completely from interface 
     properties = interfaceMatch.group("properties")    
