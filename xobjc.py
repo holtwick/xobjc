@@ -111,9 +111,19 @@ import subprocess
 
 ### CONFIG BEGIN 
 
-DEBUG = 0
+# !!! PLEASE CHANGE THE FOLLOWING TO YOU NEEDS !!!
+
+# No backup at all
+# BACKUP_FOLDER = None
+
+# Subfolder of the sources location
 # BACKUP_FOLDER = 'BACKUP-XOBJC'
+
+# All into one absolute path
 BACKUP_FOLDER = os.path.expandvars('${HOME}/work/_build/__xobjc_backup')
+
+
+DEBUG = 0
 FORCE_METHODS = False #True
 STRIP_TRAILING_SPACES = True
 NONATOMIC = ""
@@ -499,15 +509,16 @@ def modifyFiles(filename):
         return False
         
     # Backup files
-    backupFolder = os.path.join(
-        folder, 
-        BACKUP_FOLDER, 
-        'backup-' + datetime.datetime.today().strftime("%Y%m%d-%H%M%S"))
-    if not os.path.isdir(backupFolder):
-        os.makedirs(backupFolder)
-    shutil.copyfile(hfile, os.path.join(backupFolder, filePart[:-2] + '.h'))
-    shutil.copyfile(mfile, os.path.join(backupFolder, filePart[:-2] + '.m'))
-    # print "Created backup of files in %r" % backupFolder
+    if BACKUP_FOLDER:
+        backupFolder = os.path.join(
+            folder, 
+            BACKUP_FOLDER, 
+            'backup-' + datetime.datetime.today().strftime("%Y%m%d-%H%M%S"))
+        if not os.path.isdir(backupFolder):
+            os.makedirs(backupFolder)
+        shutil.copyfile(hfile, os.path.join(backupFolder, filePart[:-2] + '.h'))
+        shutil.copyfile(mfile, os.path.join(backupFolder, filePart[:-2] + '.m'))
+        # print "Created backup of files in %r" % backupFolder
 
 
     if STRIP_TRAILING_SPACES:
