@@ -84,6 +84,9 @@ CHANGELOG:
 - Fix: Can handle missing spaces around asterisk
 - External settings did not work, therefore removed
 
+0.12
+- Expand environment variables for backup path
+
 TODO:
 
 - Work with more implementations etc. in one file and match name
@@ -96,7 +99,7 @@ TODO:
 
 """
 
-__version__ = "0.11"
+__version__ = "0.12"
 
 import re
 import os
@@ -109,8 +112,8 @@ import subprocess
 ### CONFIG BEGIN 
 
 DEBUG = 0
-BACKUP_FOLDER = 'BACKUP-XOBJC'
-# BACKUP_FOLDER = '/Users/dirk/work/_build/BACKUP-XOBJC'
+# BACKUP_FOLDER = 'BACKUP-XOBJC'
+BACKUP_FOLDER = os.path.expandvars('${HOME}/work/_build/__xobjc_backup')
 FORCE_METHODS = False #True
 STRIP_TRAILING_SPACES = True
 NONATOMIC = ""
