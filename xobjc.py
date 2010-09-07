@@ -96,6 +96,8 @@ TODO:
 
 """
 
+__version__ = "0.11"
+
 import re
 import os
 import os.path
@@ -107,8 +109,8 @@ import subprocess
 ### CONFIG BEGIN 
 
 DEBUG = 0
-# BACKUP_FOLDER = 'BACKUP-XOBJC'
-BACKUP_FOLDER = '/Users/dirk/work/_build/BACKUP-XOBJC'
+BACKUP_FOLDER = 'BACKUP-XOBJC'
+# BACKUP_FOLDER = '/Users/dirk/work/_build/BACKUP-XOBJC'
 FORCE_METHODS = False #True
 STRIP_TRAILING_SPACES = True
 NONATOMIC = ""
