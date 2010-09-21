@@ -90,6 +90,9 @@ CHANGELOG:
 - Support for .mm file suffixes
 - DEBUG does not write files
 
+0.13 (2010-)
+- xxx
+
 TODO:
 
 - Work with more implementations etc. in one file and match name
@@ -123,7 +126,7 @@ import subprocess
 
 # All into one absolute path
 BACKUP_FOLDER = os.path.expandvars('${HOME}/work/_build/__xobjc_backup')
-DEBUG = 0
+DEBUG = 1
 FORCE_METHODS = False #True
 STRIP_TRAILING_SPACES = True
 NONATOMIC = ""
@@ -332,9 +335,14 @@ def analyze(hdata, mdata):
     
     # Remove @properties completely from interface 
     properties = interfaceMatch.group("properties")    
-    properties = rxProperty.sub('', properties).lstrip()
-            
+    
+    if isCategory:
+        for mpp in rxProperty.finditer(properties):   
+            propBlock.append(mpp.group(0))                     
+                    
     if not isCategory:
+        properties = rxProperty.sub('', properties).lstrip()
+        
         # Create @properties
         for vname in sorted(vars.keys(), key=lambda k:k.strip('*').strip('_')):
             mode, type_ = vars[vname]
@@ -391,7 +399,7 @@ def analyze(hdata, mdata):
 
         # print viewdidunload
     
-        propBlock = "\n".join(propBlock)        
+    propBlock = "\n".join(propBlock)        
              
     ### MODULE
 
@@ -456,8 +464,6 @@ def analyze(hdata, mdata):
             mDefs.append(mName + ';')
         elif rxInitMethod.match(mName):
             mDefs.append(mName + ';')        
-        elif isCategory:
-            mDefs.append(mName + ';')        
     
     ### XINSTANCE
     #mdi = rxInstance.search(bodyStripped)
@@ -475,10 +481,9 @@ def analyze(hdata, mdata):
     ### RESULT
    
     if isCategory:
-        
-        xpub = 1
-        
+
         hdata = (hdata[:interfaceMatch.start("properties")] 
+            + ('\n\n' + propBlock).rstrip()             
             + ('\n\n' + mDefs).rstrip()  
             + '\n\n' + hdata[interfaceMatch.end("properties"):])
                 
