@@ -80,12 +80,15 @@ CHANGELOG:
 - Multiple file and path arguments
 - Added XDELEGATE
 
-0.11
+0.11 (2010-09-07)
 - Fix: Can handle missing spaces around asterisk
 - External settings did not work, therefore removed
 
-0.12
+0.12 (2010-09-21)
+- Categories support
 - Expand environment variables for backup path
+- Support for .mm file suffixes
+- DEBUG does not write files
 
 TODO:
 
@@ -95,7 +98,6 @@ TODO:
   => Create all needed stuff
 - XPRIVATE 
   => Put them into a category in the implementation file
-- Support for categories
 
 """
 
@@ -121,8 +123,6 @@ import subprocess
 
 # All into one absolute path
 BACKUP_FOLDER = os.path.expandvars('${HOME}/work/_build/__xobjc_backup')
-
-
 DEBUG = 0
 FORCE_METHODS = False #True
 STRIP_TRAILING_SPACES = True
@@ -142,6 +142,18 @@ rxInterface = re.compile("""
     .*?
     """, re.VERBOSE | re.M | re.DOTALL)
 
+rxInterfaceCat = re.compile("""
+    .*?
+    @interface 
+        (?P<interface> .*?) 
+        \( 
+            (?P<category> .*?)
+        \) 
+        
+    (?P<properties> .*?)
+    @end
+    .*?
+    """, re.VERBOSE | re.M | re.DOTALL)
 rxImplementation = re.compile("""
     .*?
     \@implementation\s+(?P<name>[a-zA-Z0-9_]+)
@@ -277,9 +289,9 @@ class Module:
         self.m = self.baee = ".m"
 
 def stripComments(value):
-    if DEBUG: 
-        for c in rxComment.findall(value): 
-            print c
+    #if DEBUG: 
+    #    for c in rxComment.findall(value): 
+    #        print c
     return rxComment.sub('', value)
 
 def extractVariables(data):
@@ -294,85 +306,92 @@ def analyze(hdata, mdata):
         
     vars = dict()
     
-    interfaceMatch = rxInterface.match(hdata)
-    if not interfaceMatch:
-        # This is a category which has no varblock
-        return None, None
-        
-    varblock = interfaceMatch.group("varblock")    
-    varblock = stripComments(varblock.strip())
+    propBlock = []    
+    viewdidunload = []
+    dealloc = []       
+    block = []   
+    isCategory = 0
     
-    # Collect variable definitions
-    for mv in rxVariables.finditer(varblock):                        
-        mode, type_, names, names_ = mv.groups()
-        for vname in extractVariables(names):
-            vars[''.join(vname.split())] = (mode.lower(), type_)    
+    interfaceMatch = rxInterface.match(hdata) 
+    if not interfaceMatch:
+        interfaceMatch = rxInterfaceCat.match(hdata)  
+        if not interfaceMatch:  
+            return None, None
+        else:
+            isCategory = 1
+    
+    if not isCategory:
+        varblock = interfaceMatch.group("varblock")    
+        varblock = stripComments(varblock.strip())
+    
+        # Collect variable definitions
+        for mv in rxVariables.finditer(varblock):                        
+            mode, type_, names, names_ = mv.groups()
+            for vname in extractVariables(names):
+                vars[''.join(vname.split())] = (mode.lower(), type_)    
     
     # Remove @properties completely from interface 
     properties = interfaceMatch.group("properties")    
     properties = rxProperty.sub('', properties).lstrip()
             
-    # Create @properties
-    propBlock = []    
-    viewdidunload = []
-    dealloc = []       
-    block = []   
-    for vname in sorted(vars.keys(), key=lambda k:k.strip('*').strip('_')):
-        mode, type_ = vars[vname]
+    if not isCategory:
+        # Create @properties
+        for vname in sorted(vars.keys(), key=lambda k:k.strip('*').strip('_')):
+            mode, type_ = vars[vname]
         
-        iboutlet = 0
-        star = '*' if vname.startswith('*') else ''
-        name = vname.lstrip('*') # Withoout leading *
-        pvname = name # Without underscore
+            iboutlet = 0
+            star = '*' if vname.startswith('*') else ''
+            name = vname.lstrip('*') # Withoout leading *
+            pvname = name # Without underscore
         
-        # Google compatible synthesize
-        if name.endswith('_'):
-            pvname = name[:-1]
-            block.append("@synthesize %s = %s;" % (pvname, name))
-        elif name.startswith('_'):
-            pvname = name[1:]
-            block.append("@synthesize %s = %s;" % (pvname, name))
-        else:
-            block.append("@synthesize %s;" % (name))
+            # Google compatible synthesize
+            if name.endswith('_'):
+                pvname = name[:-1]
+                block.append("@synthesize %s = %s;" % (pvname, name))
+            elif name.startswith('_'):
+                pvname = name[1:]
+                block.append("@synthesize %s = %s;" % (pvname, name))
+            else:
+                block.append("@synthesize %s;" % (name))
             
-        # Properties
-        if mode == 'iboutlet':
-            iboutlet = 1
-            mode = 'retain'
-            propBlock.append("@property (%s%s) %s %s%s;" % (NONATOMIC, mode, type_, star, pvname))
-        elif mode == 'xiboutlet':
-            iboutlet = 1
-            mode = "retain"
-            type_ = "IBOutlet %s" % type_
-            propBlock.append("@property (%s%s) %s %s%s;" % (NONATOMIC, mode, type_, star, pvname))
-        elif mode == 'xdelegate':
-            iboutlet = 1
-            mode = "assign"
-            type_ = "IBOutlet %s" % type_
-            propBlock.append("@property (%s%s) %s %s%s;" % (NONATOMIC, mode, type_, star, pvname))
-        elif mode.startswith('xproperty('):
-            pattr = mode.strip()[10:-1]
-            propBlock.append("@property (%s) %s %s%s;" % (pattr, type_, star, pvname))
-            mode = 'assign'
-            pattrlist = [x.strip().lower() for x in pattr.split(',')]
-            if 'retain' in pattrlist or 'copy' in pattrlist:
+            # Properties
+            if mode == 'iboutlet':
+                iboutlet = 1
                 mode = 'retain'
-        else:
-            mode = mode[1:]
-            propBlock.append("@property (%s%s) %s %s%s;" % (NONATOMIC, mode, type_, star, pvname))
+                propBlock.append("@property (%s%s) %s %s%s;" % (NONATOMIC, mode, type_, star, pvname))
+            elif mode == 'xiboutlet':
+                iboutlet = 1
+                mode = "retain"
+                type_ = "IBOutlet %s" % type_
+                propBlock.append("@property (%s%s) %s %s%s;" % (NONATOMIC, mode, type_, star, pvname))
+            elif mode == 'xdelegate':
+                iboutlet = 1
+                mode = "assign"
+                type_ = "IBOutlet %s" % type_
+                propBlock.append("@property (%s%s) %s %s%s;" % (NONATOMIC, mode, type_, star, pvname))
+            elif mode.startswith('xproperty('):
+                pattr = mode.strip()[10:-1]
+                propBlock.append("@property (%s) %s %s%s;" % (pattr, type_, star, pvname))
+                mode = 'assign'
+                pattrlist = [x.strip().lower() for x in pattr.split(',')]
+                if 'retain' in pattrlist or 'copy' in pattrlist:
+                    mode = 'retain'
+            else:
+                mode = mode[1:]
+                propBlock.append("@property (%s%s) %s %s%s;" % (NONATOMIC, mode, type_, star, pvname))
         
-        # print mode 
+            # print mode 
         
-        # Release stuff
-        if mode in ('retain', 'copy'):
-            dealloc.append("    [%s xrelease];" % name)
+            # Release stuff
+            if mode in ('retain', 'copy'):
+                dealloc.append("    [%s xrelease];" % name)
 
-        if iboutlet:
-            viewdidunload.append("    self.%s = xnil;" % pvname)
+            if iboutlet:
+                viewdidunload.append("    self.%s = xnil;" % pvname)
 
-    # print viewdidunload
+        # print viewdidunload
     
-    propBlock = "\n".join(propBlock)        
+        propBlock = "\n".join(propBlock)        
              
     ### MODULE
 
@@ -380,39 +399,44 @@ def analyze(hdata, mdata):
     implementationMatch = rxImplementation.match(mdata)    
     impName = implementationMatch.group('name')
         
+    #if DEBUG and implementationMatch:
+    #    print "Implementation", implementationMatch.groups()
+        
     # Replace @synthesize block 
     body = implementationMatch.group("body")
-    body = rxSynthesize.sub('', body).strip()
-    block = "\n".join(block) + '\n\n'
-            
-    # Update 'dealloc'
-    md = rxDealloc.search(body)
-    if md:
-        # deallocbody = rxRelease.sub('', md.group("deallocbody")).strip()     
-        deallocbody = md.group("deallocbody").strip()     
-        if deallocbody:
-            deallocbody = "    " + deallocbody + "\n\n"
-        newdealloc = ("- (void)dealloc { "
-            + ("\n" + deallocbody).rstrip()
-            + ("\n" + "\n".join(sorted(dealloc))).rstrip()
-            + "\n    [super dealloc];\n}")
-        body = rxDealloc.sub(newdealloc, body)
-    else:
-        newdealloc = "- (void)dealloc {\n" + "\n".join(sorted(dealloc)) + "\n    [super dealloc];\n}" 
-        body += "\n\n" + newdealloc  
 
-    # Update 'viewDidUnload' (iPhone and iPad only)
-    md = rxViewDidUnload.search(body)
-    if md:
-        viewdidunloadbody = rxViewDidUnloadBody.sub('', md.group("viewdidunloadbody")).strip()     
-        if viewdidunloadbody:
-            viewdidunloadbody = "\n    " + viewdidunloadbody + "\n\n"
-        newviewdidunloadbody = (
-            "- (void)viewDidUnload {\n    [super viewDidUnload];\n" 
-            + ("    " + viewdidunloadbody.strip()).rstrip() 
-            + ("\n" + "\n".join(sorted(viewdidunload))).rstrip() 
-            + "\n}")
-        body = rxViewDidUnload.sub(newviewdidunloadbody, body)
+    if not isCategory:    
+        body = rxSynthesize.sub('', body).strip()
+        block = "\n".join(block) + '\n\n'
+            
+        # Update 'dealloc'
+        md = rxDealloc.search(body)
+        if md:
+            # deallocbody = rxRelease.sub('', md.group("deallocbody")).strip()     
+            deallocbody = md.group("deallocbody").strip()     
+            if deallocbody:
+                deallocbody = "    " + deallocbody + "\n\n"
+            newdealloc = ("- (void)dealloc { "
+                + ("\n" + deallocbody).rstrip()
+                + ("\n" + "\n".join(sorted(dealloc))).rstrip()
+                + "\n    [super dealloc];\n}")
+            body = rxDealloc.sub(newdealloc, body)
+        else:
+            newdealloc = "- (void)dealloc {\n" + "\n".join(sorted(dealloc)) + "\n    [super dealloc];\n}" 
+            body += "\n\n" + newdealloc  
+
+        # Update 'viewDidUnload' (iPhone and iPad only)
+        md = rxViewDidUnload.search(body)
+        if md:
+            viewdidunloadbody = rxViewDidUnloadBody.sub('', md.group("viewdidunloadbody")).strip()     
+            if viewdidunloadbody:
+                viewdidunloadbody = "\n    " + viewdidunloadbody + "\n\n"
+            newviewdidunloadbody = (
+                "- (void)viewDidUnload {\n    [super viewDidUnload];\n" 
+                + ("    " + viewdidunloadbody.strip()).rstrip() 
+                + ("\n" + "\n".join(sorted(viewdidunload))).rstrip() 
+                + "\n}")
+            body = rxViewDidUnload.sub(newviewdidunloadbody, body)
           
     ### METHODS
     mDefs = []      
@@ -423,14 +447,16 @@ def analyze(hdata, mdata):
         mName = mMethod.group('name').strip()
         # if mMethod.group("comment"):
         #    mName = "\n" + mMethod.group("comment").strip() + "\n" + mName
-        if DEBUG: 
-            print mName, mMethod.groups()
+        #if DEBUG: 
+        #    print mName, mMethod.groups()
         if (mMethod.group('kind') == 'XPUBLIC'):
             xpub += 1
             mDefs.append(mName + ';')
         elif mName.startswith("+") or mName.lstrip('-').lstrip().startswith("(IBAction)"):            
             mDefs.append(mName + ';')
         elif rxInitMethod.match(mName):
+            mDefs.append(mName + ';')        
+        elif isCategory:
             mDefs.append(mName + ';')        
     
     ### XINSTANCE
@@ -448,15 +474,25 @@ def analyze(hdata, mdata):
           
     ### RESULT
    
-    hdata = (hdata[:interfaceMatch.start("properties")] 
-        + ('\n\n' + mDefs).rstrip()  
-        + ('\n\n' + propBlock).rstrip()             
-        + '\n\n' + hdata[interfaceMatch.end("properties"):])
+    if isCategory:
         
-    mdata = (mdata[:implementationMatch.start('body')] 
-        + ('\n\n' + body).rstrip() 
-        + ('\n\n' + block).rstrip() 
-        + '\n\n' + mdata[implementationMatch.end('body'):]) 
+        xpub = 1
+        
+        hdata = (hdata[:interfaceMatch.start("properties")] 
+            + ('\n\n' + mDefs).rstrip()  
+            + '\n\n' + hdata[interfaceMatch.end("properties"):])
+                
+    else:
+        
+        hdata = (hdata[:interfaceMatch.start("properties")] 
+            + ('\n\n' + mDefs).rstrip()  
+            + ('\n\n' + propBlock).rstrip()             
+            + '\n\n' + hdata[interfaceMatch.end("properties"):])
+        
+        mdata = (mdata[:implementationMatch.start('body')] 
+            + ('\n\n' + body).rstrip() 
+            + ('\n\n' + block).rstrip() 
+            + '\n\n' + mdata[implementationMatch.end('body'):]) 
 
     # Did something change?
     if xpub or propBlock:
@@ -484,7 +520,9 @@ def modifyFiles(filename):
         return False
     if not os.path.isfile(mfile):
         # print "File %r does not exist" % hfile
-        return False
+        mfile = filename[:filename.rfind(".")] + '.mm'
+        if not os.path.isfile(mfile):
+            return False
     
     htime = os.stat(hfile).st_mtime
     mtime = os.stat(mfile).st_mtime
@@ -525,16 +563,27 @@ def modifyFiles(filename):
         hdata = "\n".join([l.rstrip() for l in hdata.splitlines()])
         mdata = "\n".join([l.rstrip() for l in mdata.splitlines()])
     
-    f = open(hfile, 'w')
-    f.write(hdata)
-    f.close()
+    if DEBUG:        
+        print "=" * 80
+        print hfile
+        print "=" * 80
+        print hdata
+        print "=" * 80
+        print mfile
+        print "=" * 80
+        print mdata
     
-    f = open(mfile, 'w')
-    f.write(mdata)
-    f.close()
+    if not DEBUG:
+        f = open(hfile, 'w')
+        f.write(hdata)
+        f.close()
     
-    # Same file time
-    subprocess.call(['touch', hfile, mfile])
+        f = open(mfile, 'w')
+        f.write(mdata)
+        f.close()
+    
+        # Same file time
+        subprocess.call(['touch', hfile, mfile])
     
     #print "Modified %r" % hfile
     #print "Modified %r" % mfile
