@@ -126,7 +126,7 @@ import subprocess
 
 # All into one absolute path
 BACKUP_FOLDER = os.path.expandvars('${HOME}/work/_build/__xobjc_backup')
-DEBUG = 1
+DEBUG = 0
 FORCE_METHODS = False #True
 STRIP_TRAILING_SPACES = True
 NONATOMIC = ""
