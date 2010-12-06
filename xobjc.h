@@ -14,6 +14,7 @@
 
 #define xnil nil
 #define xrelease release
+#define xobjc
 
 #define XPUBLIC 
 

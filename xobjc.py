@@ -91,7 +91,8 @@ CHANGELOG:
 - DEBUG does not write files
 
 0.13 (2010-)
-- xxx
+- XPROPERTY arguments case sensitive
+- Added 'xobjc' marker into @property
 
 TODO:
 
@@ -331,7 +332,7 @@ def analyze(hdata, mdata):
         for mv in rxVariables.finditer(varblock):                        
             mode, type_, names, names_ = mv.groups()
             for vname in extractVariables(names):
-                vars[''.join(vname.split())] = (mode.lower(), type_)    
+                vars[''.join(vname.split())] = (mode.lower(), type_, mode)    
     
     # Remove @properties completely from interface 
     properties = interfaceMatch.group("properties")    
@@ -345,7 +346,7 @@ def analyze(hdata, mdata):
         
         # Create @properties
         for vname in sorted(vars.keys(), key=lambda k:k.strip('*').strip('_')):
-            mode, type_ = vars[vname]
+            mode, type_, origMode = vars[vname]
         
             iboutlet = 0
             star = '*' if vname.startswith('*') else ''
@@ -363,30 +364,32 @@ def analyze(hdata, mdata):
                 block.append("@synthesize %s;" % (name))
             
             # Properties
+            propMarker = "xobjc "
             if mode == 'iboutlet':
                 iboutlet = 1
                 mode = 'retain'
-                propBlock.append("@property (%s%s) %s %s%s;" % (NONATOMIC, mode, type_, star, pvname))
+                propBlock.append("@property (%s%s%s) %s %s%s;" % (propMarker, NONATOMIC, mode, type_, star, pvname))
             elif mode == 'xiboutlet':
                 iboutlet = 1
                 mode = "retain"
                 type_ = "IBOutlet %s" % type_
-                propBlock.append("@property (%s%s) %s %s%s;" % (NONATOMIC, mode, type_, star, pvname))
+                propBlock.append("@property (%s%s%s) %s %s%s;" % (propMarker, NONATOMIC, mode, type_, star, pvname))
             elif mode == 'xdelegate':
                 iboutlet = 1
                 mode = "assign"
                 type_ = "IBOutlet %s" % type_
-                propBlock.append("@property (%s%s) %s %s%s;" % (NONATOMIC, mode, type_, star, pvname))
+                propBlock.append("@property (%s%s%s) %s %s%s;" % (propMarker, NONATOMIC, mode, type_, star, pvname))
             elif mode.startswith('xproperty('):
-                pattr = mode.strip()[10:-1]
-                propBlock.append("@property (%s) %s %s%s;" % (pattr, type_, star, pvname))
+                # XXX Iboutlet
+                pattr = origMode.strip()[10:-1]
+                propBlock.append("@property (%s%s) %s %s%s;" % (propMarker, pattr, type_, star, pvname))
                 mode = 'assign'
                 pattrlist = [x.strip().lower() for x in pattr.split(',')]
                 if 'retain' in pattrlist or 'copy' in pattrlist:
                     mode = 'retain'
             else:
                 mode = mode[1:]
-                propBlock.append("@property (%s%s) %s %s%s;" % (NONATOMIC, mode, type_, star, pvname))
+                propBlock.append("@property (%s%s%s) %s %s%s;" % (propMarker, NONATOMIC, mode, type_, star, pvname))
         
             # print mode 
         
