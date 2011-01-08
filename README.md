@@ -74,9 +74,9 @@ Example
 
 Some pictures say more than thousand words. Here is a before/after diff showing the magic:
 
-![Header](http://mail.holtwick.it/xobjc/demo-h.PNG "Header")
+![Header](https://github.com/holtwick/xobjc/raw/master/website/demo-h.png "Header")
 
-![Module](http://mail.holtwick.it/xobjc/demo-m.PNG "Module")
+![Module](https://github.com/holtwick/xobjc/raw/master/website/demo-m.png "Module")
 
 XCode Integration
 -----------------

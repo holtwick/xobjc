@@ -90,7 +90,7 @@ CHANGELOG:
 - Support for .mm file suffixes
 - DEBUG does not write files
 
-0.13 (2010-)
+0.13 (2011-01-08)
 - XPROPERTY arguments case sensitive
 - Added 'xobjc' marker into @property
 - 'XASSIGN BOOL xxx' creates corect 'isXxx' getter
@@ -106,7 +106,7 @@ TODO:
 
 """
 
-__version__ = "0.12"
+__version__ = "0.13"
 
 import re
 import os
