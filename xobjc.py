@@ -93,6 +93,7 @@ CHANGELOG:
 0.13 (2010-)
 - XPROPERTY arguments case sensitive
 - Added 'xobjc' marker into @property
+- 'XASSIGN BOOL xxx' creates corect 'isXxx' getter
 
 TODO:
 
@@ -129,6 +130,7 @@ import subprocess
 BACKUP_FOLDER = os.path.expandvars('${HOME}/work/_build/__xobjc_backup')
 DEBUG = 0
 FORCE_METHODS = False #True
+BOOL_WITH_IS_GETTER = True
 STRIP_TRAILING_SPACES = True
 NONATOMIC = ""
 # NONATOMIC = "nonatomic, "
@@ -285,6 +287,10 @@ rxInitMethod = re.compile("""
     \-\s*(.*?)\s*initWith.*
 """, re.VERBOSE | re.M | re.DOTALL)
 
+def mySorted(v, **k):
+    return v
+    # return sorted(v, **k)
+
 class Module:
     
     def __init__(filename):
@@ -345,7 +351,7 @@ def analyze(hdata, mdata):
         properties = rxProperty.sub('', properties).lstrip()
         
         # Create @properties
-        for vname in sorted(vars.keys(), key=lambda k:k.strip('*').strip('_')):
+        for vname in mySorted(vars.keys(), key=lambda k:k.strip('*').strip('_')):
             mode, type_, origMode = vars[vname]
         
             iboutlet = 0
@@ -389,6 +395,8 @@ def analyze(hdata, mdata):
                     mode = 'retain'
             else:
                 mode = mode[1:]
+                if BOOL_WITH_IS_GETTER and type_ == "BOOL":
+                    mode = "getter=is%s" % pvname.capitalize()
                 propBlock.append("@property (%s%s%s) %s %s%s;" % (propMarker, NONATOMIC, mode, type_, star, pvname))
         
             # print mode 
@@ -429,11 +437,11 @@ def analyze(hdata, mdata):
                 deallocbody = "    " + deallocbody + "\n\n"
             newdealloc = ("- (void)dealloc { "
                 + ("\n" + deallocbody).rstrip()
-                + ("\n" + "\n".join(sorted(dealloc))).rstrip()
+                + ("\n" + "\n".join(mySorted(dealloc))).rstrip()
                 + "\n    [super dealloc];\n}")
             body = rxDealloc.sub(newdealloc, body)
         else:
-            newdealloc = "- (void)dealloc {\n" + "\n".join(sorted(dealloc)) + "\n    [super dealloc];\n}" 
+            newdealloc = "- (void)dealloc {\n" + "\n".join(mySorted(dealloc)) + "\n    [super dealloc];\n}" 
             body += "\n\n" + newdealloc  
 
         # Update 'viewDidUnload' (iPhone and iPad only)
@@ -445,7 +453,7 @@ def analyze(hdata, mdata):
             newviewdidunloadbody = (
                 "- (void)viewDidUnload {\n    [super viewDidUnload];\n" 
                 + ("    " + viewdidunloadbody.strip()).rstrip() 
-                + ("\n" + "\n".join(sorted(viewdidunload))).rstrip() 
+                + ("\n" + "\n".join(mySorted(viewdidunload))).rstrip() 
                 + "\n}")
             body = rxViewDidUnload.sub(newviewdidunloadbody, body)
           
@@ -476,7 +484,7 @@ def analyze(hdata, mdata):
     
     # If no XPUBLIC was defined don't replace old stuff
     if mDefs or FORCE_METHODS:
-        # mDefs = "\n".join(sorted(mDefs)) + '\n\n'
+        # mDefs = "\n".join(mySorted(mDefs)) + '\n\n'
         mDefs = "\n".join(mDefs) + '\n\n'
     else:
         mDefs = properties       
