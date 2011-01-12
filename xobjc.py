@@ -396,7 +396,7 @@ def analyze(hdata, mdata):
             else:
                 mode = mode[1:]
                 if BOOL_WITH_IS_GETTER and type_ == "BOOL":
-                    mode = "getter=is%s" % pvname.capitalize()
+                    mode = "getter=is%s%s" % (pvname[0].capitalize(), pvname[1:])
                 propBlock.append("@property (%s%s%s) %s %s%s;" % (propMarker, NONATOMIC, mode, type_, star, pvname))
         
             # print mode 
