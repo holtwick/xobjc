@@ -78,13 +78,23 @@ Some pictures say more than thousand words. Here is a before/after diff showing 
 
 ![Module](https://github.com/holtwick/xobjc/raw/master/website/demo-m.png "Module")
 
-XCode Integration
------------------
+XCode3 Integration
+------------------
 
 In Xcode in the menu choose the script symbol and there ``Edit User Scripts``. Create a new
 entry and copy and paste the contents of the file ``xobjc.py`` into the text field. That's all, 
 you are done. Just call the script form the menu or via the key shortcut you defined while you
 are in the header or implementation file you like to become updated.
+
+XCode4 Integration
+------------------
+
+Copy `XObjC Tool.workflow` to `~/Library/Services/`. Now edit the workflow with `Automator` and
+adjust the path to `xobjc4.py`. You can now add a keyboard shortcut to it via the Keyboard settings
+in the System Preferences tool. In XCode4 you can call it via the `Services` menu or via your keyboard shortcut.
+
+Known Bugs: It does only work for the first tab. If someone can help out with a modification of the 
+AppleScript this would be very appreciated. Thanks.
 
 Related
 -------
