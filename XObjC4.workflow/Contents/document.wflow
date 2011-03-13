@@ -47,7 +47,13 @@
 				<key>ActionParameters</key>
 				<dict>
 					<key>source</key>
-					<string>tell application id "com.apple.dt.Xcode"	if exists front source document then		return path of front source document as Unicode text	end ifend tell </string>
+					<string>tell application id "com.apple.dt.Xcode"	
+	-- save all open source files
+	-- save source documents	
+	-- return paths as a list
+	return path of source documents
+
+end tell</string>
 				</dict>
 				<key>Application</key>
 				<array>
@@ -68,17 +74,17 @@
 				<key>Class Name</key>
 				<string>RunScriptAction</string>
 				<key>InputUUID</key>
-				<string>154CE90C-823A-49C8-9A74-D8CE1B641BAE</string>
+				<string>AD908FE2-621A-4494-A987-6F448B85429E</string>
 				<key>Keywords</key>
 				<array>
 					<string>Run</string>
 				</array>
 				<key>OutputUUID</key>
-				<string>9EC7A124-B03D-471A-9438-BE11A4D7F90B</string>
-				<key>ShowWhenRun</key>
+				<string>38A88520-6EC4-4A10-A1BD-0F629967E4FC</string>
+				<key>StartAction</key>
 				<false/>
 				<key>UUID</key>
-				<string>AA974E29-08D2-4934-9220-5E375B0D3CDC</string>
+				<string>93416056-A9F3-4504-A086-3F8E71D051C6</string>
 				<key>UnlocalizedApplications</key>
 				<array>
 					<string>Automator</string>
@@ -105,14 +111,14 @@ end run</string>
 					</dict>
 				</dict>
 				<key>isViewVisible</key>
-				<true/>
+				<false/>
 				<key>location</key>
-				<string>543.000000:825.000000</string>
+				<string>302.000000:597.000000</string>
 				<key>nibPath</key>
 				<string>/System/Library/Automator/Run AppleScript.action/Contents/Resources/English.lproj/main.nib</string>
 			</dict>
 			<key>isViewVisible</key>
-			<true/>
+			<false/>
 		</dict>
 		<dict>
 			<key>action</key>
@@ -159,10 +165,7 @@ end run</string>
 				<key>ActionParameters</key>
 				<dict>
 					<key>COMMAND_STRING</key>
-					<string>for f in "$@"
-do
-	/Users/dirk/work/xobjc/xobjc4.py "$f"
-done</string>
+					<string>/Users/dirk/work/xobjc/xobjc4.py $@</string>
 					<key>CheckedForUserDefaultShell</key>
 					<true/>
 					<key>inputMethod</key>
@@ -191,7 +194,7 @@ done</string>
 				<key>Class Name</key>
 				<string>RunShellScriptAction</string>
 				<key>InputUUID</key>
-				<string>09C07C7A-E467-4269-BA8D-A6763B3A46E9</string>
+				<string>3DF9515F-EA04-44F4-9370-5FC8E8F46CF4</string>
 				<key>Keywords</key>
 				<array>
 					<string>Shell</string>
@@ -201,11 +204,11 @@ done</string>
 					<string>Unix</string>
 				</array>
 				<key>OutputUUID</key>
-				<string>E4291203-8A51-4570-9BD2-E03080A324B4</string>
+				<string>82C3D6A5-64AF-4569-BD2C-B07CF4852F3D</string>
 				<key>ShowWhenRun</key>
 				<false/>
 				<key>UUID</key>
-				<string>3C4AABB0-AE19-4871-ADF3-C745DA7BF722</string>
+				<string>436E0C57-B266-4703-99D3-A95405A836CF</string>
 				<key>UnlocalizedApplications</key>
 				<array>
 					<string>Automator</string>
@@ -279,11 +282,113 @@ done</string>
 					</dict>
 				</dict>
 				<key>isViewVisible</key>
-				<true/>
+				<false/>
 				<key>location</key>
-				<string>543.000000:512.000000</string>
+				<string>302.000000:555.000000</string>
 				<key>nibPath</key>
 				<string>/System/Library/Automator/Run Shell Script.action/Contents/Resources/English.lproj/main.nib</string>
+			</dict>
+			<key>isViewVisible</key>
+			<false/>
+		</dict>
+		<dict>
+			<key>action</key>
+			<dict>
+				<key>AMAccepts</key>
+				<dict>
+					<key>Container</key>
+					<string>List</string>
+					<key>Optional</key>
+					<true/>
+					<key>Types</key>
+					<array>
+						<string>com.apple.applescript.object</string>
+					</array>
+				</dict>
+				<key>AMActionVersion</key>
+				<string>1.0</string>
+				<key>AMParameterProperties</key>
+				<dict>
+					<key>source</key>
+					<dict/>
+				</dict>
+				<key>AMProvides</key>
+				<dict>
+					<key>Container</key>
+					<string>List</string>
+					<key>Types</key>
+					<array>
+						<string>com.apple.applescript.object</string>
+					</array>
+				</dict>
+				<key>ActionBundlePath</key>
+				<string>/System/Library/Automator/Run AppleScript.action</string>
+				<key>ActionName</key>
+				<string>Run AppleScript</string>
+				<key>ActionParameters</key>
+				<dict>
+					<key>source</key>
+					<string>on run {input, parameters}	tell application "GrowlHelperApp"		-- Make a list of all the notification types 		-- that this script will ever send:		set the allNotificationsList to {"XObjC"}				-- Make a list of the notifications 		-- that will be enabled by default.      		-- Those not enabled by default can be enabled later 		-- in the 'Applications' tab of the growl prefpane.		set the enabledNotificationsList to {"XObjC"}				-- Register our script with growl.		-- You can optionally (as here) set a default icon 		-- for this script's notifications.		register as application ¬			"XObjC" all notifications allNotificationsList ¬			default notifications enabledNotificationsList ¬			icon of application "XCode"				--	Send a Notification...		notify with name ¬			"XObjC" title ¬			"XCode" description ¬			(input as Unicode text) application name "XObjC"			end tellend run</string>
+				</dict>
+				<key>Application</key>
+				<array>
+					<string>Automator</string>
+				</array>
+				<key>BundleIdentifier</key>
+				<string>com.apple.Automator.RunScript</string>
+				<key>CFBundleVersion</key>
+				<string>1.0</string>
+				<key>CanShowSelectedItemsWhenRun</key>
+				<false/>
+				<key>CanShowWhenRun</key>
+				<true/>
+				<key>Category</key>
+				<array>
+					<string>AMCategoryUtilities</string>
+				</array>
+				<key>Class Name</key>
+				<string>RunScriptAction</string>
+				<key>InputUUID</key>
+				<string>CB4C8E9B-5632-4F56-A996-E9002F338948</string>
+				<key>Keywords</key>
+				<array>
+					<string>Run</string>
+				</array>
+				<key>OutputUUID</key>
+				<string>93F2AFD6-9D01-4E34-A51F-0CF28D2E025F</string>
+				<key>UUID</key>
+				<string>15CCB17F-66BB-4691-A710-336F7FC09B7E</string>
+				<key>UnlocalizedApplications</key>
+				<array>
+					<string>Automator</string>
+				</array>
+				<key>arguments</key>
+				<dict>
+					<key>0</key>
+					<dict>
+						<key>default value</key>
+						<string>on run {input, parameters}
+	
+	(* Your script goes here *)
+	
+	return input
+end run</string>
+						<key>name</key>
+						<string>source</string>
+						<key>required</key>
+						<string>0</string>
+						<key>type</key>
+						<string>0</string>
+						<key>uuid</key>
+						<string>0</string>
+					</dict>
+				</dict>
+				<key>isViewVisible</key>
+				<true/>
+				<key>location</key>
+				<string>302.000000:513.000000</string>
+				<key>nibPath</key>
+				<string>/System/Library/Automator/Run AppleScript.action/Contents/Resources/English.lproj/main.nib</string>
 			</dict>
 			<key>isViewVisible</key>
 			<true/>
@@ -291,12 +396,19 @@ done</string>
 	</array>
 	<key>connectors</key>
 	<dict>
-		<key>01141A84-9E97-4C61-BDFE-FC41132C7658</key>
+		<key>7736A740-3CC4-4C1E-BE4D-F8287026A58A</key>
 		<dict>
 			<key>from</key>
-			<string>AA974E29-08D2-4934-9220-5E375B0D3CDC - AA974E29-08D2-4934-9220-5E375B0D3CDC</string>
+			<string>93416056-A9F3-4504-A086-3F8E71D051C6 - 93416056-A9F3-4504-A086-3F8E71D051C6</string>
 			<key>to</key>
-			<string>3C4AABB0-AE19-4871-ADF3-C745DA7BF722 - 3C4AABB0-AE19-4871-ADF3-C745DA7BF722</string>
+			<string>436E0C57-B266-4703-99D3-A95405A836CF - 436E0C57-B266-4703-99D3-A95405A836CF</string>
+		</dict>
+		<key>C47FDE74-7A30-4449-8A4F-538C42E3DE99</key>
+		<dict>
+			<key>from</key>
+			<string>436E0C57-B266-4703-99D3-A95405A836CF - 436E0C57-B266-4703-99D3-A95405A836CF</string>
+			<key>to</key>
+			<string>15CCB17F-66BB-4691-A710-336F7FC09B7E - 15CCB17F-66BB-4691-A710-336F7FC09B7E</string>
 		</dict>
 	</dict>
 	<key>state</key>
@@ -308,11 +420,11 @@ done</string>
 			<key>actionsMajorSplitViewState</key>
 			<dict>
 				<key>expandedPosition</key>
-				<real>269</real>
+				<real>0.0</real>
 				<key>subviewState</key>
 				<array>
-					<string>0.000000, 0.000000, 424.000000, 713.000000, NO</string>
-					<string>0.000000, 714.000000, 424.000000, 140.000000, NO</string>
+					<string>0.000000, 0.000000, 381.000000, 515.000000, NO</string>
+					<string>0.000000, 516.000000, 381.000000, 239.000000, NO</string>
 				</array>
 			</dict>
 			<key>actionsMinorSplitViewState</key>
@@ -321,8 +433,8 @@ done</string>
 				<real>0.0</real>
 				<key>subviewState</key>
 				<array>
-					<string>0.000000, 0.000000, 163.000000, 713.000000, NO</string>
-					<string>164.000000, 0.000000, 260.000000, 713.000000, NO</string>
+					<string>0.000000, 0.000000, 163.000000, 515.000000, NO</string>
+					<string>164.000000, 0.000000, 217.000000, 515.000000, NO</string>
 				</array>
 			</dict>
 			<key>variablesMajorSplitViewState</key>
@@ -331,8 +443,8 @@ done</string>
 				<real>0.0</real>
 				<key>subviewState</key>
 				<array>
-					<string>0.000000, 0.000000, 424.000000, 555.000000, NO</string>
-					<string>0.000000, 556.000000, 424.000000, 299.000000, NO</string>
+					<string>0.000000, 0.000000, 381.000000, 555.000000, NO</string>
+					<string>0.000000, 556.000000, 381.000000, 199.000000, NO</string>
 				</array>
 			</dict>
 			<key>variablesMinorSplitViewState</key>
@@ -342,34 +454,34 @@ done</string>
 				<key>subviewState</key>
 				<array>
 					<string>0.000000, 0.000000, 163.000000, 555.000000, NO</string>
-					<string>164.000000, 0.000000, 260.000000, 555.000000, NO</string>
+					<string>164.000000, 0.000000, 217.000000, 555.000000, NO</string>
 				</array>
 			</dict>
 		</dict>
 		<key>majorSplitViewState</key>
 		<dict>
 			<key>expandedPosition</key>
-			<real>424</real>
+			<real>381</real>
 			<key>subviewState</key>
 			<array>
-				<string>0.000000, 0.000000, 424.000000, 899.000000, NO</string>
-				<string>425.000000, 0.000000, 1086.000000, 899.000000, NO</string>
+				<string>0.000000, 0.000000, 381.000000, 800.000000, NO</string>
+				<string>382.000000, 0.000000, 619.000000, 800.000000, NO</string>
 			</array>
 		</dict>
 		<key>minorSplitViewState</key>
 		<dict>
 			<key>expandedPosition</key>
-			<real>150</real>
+			<real>0.0</real>
 			<key>subviewState</key>
 			<array>
-				<string>0.000000, 0.000000, 1086.000000, 880.000000, NO</string>
-				<string>0.000000, 742.000000, 1086.000000, 140.000000, YES</string>
+				<string>0.000000, 0.000000, 619.000000, 609.000000, NO</string>
+				<string>0.000000, 619.000000, 619.000000, 162.000000, NO</string>
 			</array>
 		</dict>
 		<key>windowFrame</key>
-		<string>{{131, 52}, {1510, 976}}</string>
+		<string>{{213, 86}, {1000, 877}}</string>
 		<key>workflowViewScrollPosition</key>
-		<string>{{0, 0}, {1086, 880}}</string>
+		<string>{{0, 0}, {604, 609}}</string>
 	</dict>
 	<key>workflowMetaData</key>
 	<dict>

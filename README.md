@@ -89,12 +89,11 @@ are in the header or implementation file you like to become updated.
 XCode4 Integration
 ------------------
 
-Copy `XObjC Tool.workflow` to `~/Library/Services/`. Now edit the workflow with `Automator` and
+Copy `XObjC4.workflow` to `~/Library/Services/`. Now edit the workflow with `Automator` and
 adjust the path to `xobjc4.py`. You can now add a keyboard shortcut to it via the Keyboard settings
 in the System Preferences tool. In XCode4 you can call it via the `Services` menu or via your keyboard shortcut.
 
-Known Bugs: It does only work for the first tab. If someone can help out with a modification of the 
-AppleScript this would be very appreciated. Thanks.
+If Growl is installed it will issue also a notification.
 
 Related
 -------

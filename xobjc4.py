@@ -609,9 +609,10 @@ def modifyFiles(filename):
 def xcodeReload():
     # Trick to reload files in XCode
     # Bug workaround for SL, see http://kb2.adobe.com/cps/516/cpsid_51615.html    
-    print "XCode refresh"        
+    # print "XCode refresh"        
     # subprocess.call(['arch', '-i386', 'osascript', '-e', 'activate application "Finder"\nactivate application "XCode"'])
-
+    pass
+    
 if __name__ == "__main__":
     import sys
     import glob
@@ -633,7 +634,7 @@ if __name__ == "__main__":
         for filename in sys.argv[1:]: 
         
             filename = os.path.abspath(filename)
-            print "Analyze %s" % filename
+            # print "Analyze %s" % filename
             
             mfiles = [filename] 
             if os.path.isdir(filename):            
