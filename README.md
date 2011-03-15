@@ -1,7 +1,9 @@
 xobjc
 =====
 
-**See the introduction video here [mov.io/fE](http://mov.io/fE).**
+**Xcode4 Demo on YouTube [youtube.com/watch?v=Mzfv-ANydW4](http://www.youtube.com/watch?v=Mzfv-ANydW4).**
+
+**XCode3 Demo on mov.io [mov.io/fE](http://mov.io/fE).**
 
 <div>
 	<iframe src='http://mov.io/go/showvideo/player/fE?autoplay=false' width='430' height='391' scrolling='no' frameborder='0'></iframe>
