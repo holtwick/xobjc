@@ -1,6 +1,8 @@
 xobjc
 =====
 
+[![Flattr this git repo](http://api.flattr.com/button/flattr-badge-large.png)](https://flattr.com/submit/auto?user_id=holtwick&url=https://github.com/holtwick/xobjc&title=xobjc&language=en_GB&tags=github&category=software)
+
 **FULL XCODE4 COMPATIBILITY***
 
 **Xcode4 Demo on YouTube [youtube.com/watch?v=Mzfv-ANydW4](http://www.youtube.com/watch?v=Mzfv-ANydW4).**
