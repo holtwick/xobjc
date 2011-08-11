@@ -1,6 +1,8 @@
 xobjc
 =====
 
+**FULL XCODE4 COMPATIBILITY***
+
 **Xcode4 Demo on YouTube [youtube.com/watch?v=Mzfv-ANydW4](http://www.youtube.com/watch?v=Mzfv-ANydW4).**
 
 **XCode3 Demo on mov.io [mov.io/fE](http://mov.io/fE).**
@@ -80,6 +82,18 @@ Some pictures say more than thousand words. Here is a before/after diff showing 
 
 ![Module](https://github.com/holtwick/xobjc/raw/master/website/demo-m.png "Module")
 
+XCode4 Integration
+------------------
+
+Edit your projects 'Scheme' and add a new 'Run Script Action' to your 'Build / Pre-actions'. 
+Fill in the full path of your xobjc4.py. Now each time you build your project this script
+will be run. This is super handy.
+
+![Header](https://github.com/holtwick/xobjc/raw/master/website/xcode4scheme.png "Xcode4 Scheme Modifications")
+
+If Growl is installed it will also issue a notification.
+
+
 XCode3 Integration
 ------------------
 
@@ -87,15 +101,6 @@ In Xcode in the menu choose the script symbol and there ``Edit User Scripts``. C
 entry and copy and paste the contents of the file ``xobjc.py`` into the text field. That's all, 
 you are done. Just call the script form the menu or via the key shortcut you defined while you
 are in the header or implementation file you like to become updated.
-
-XCode4 Integration
-------------------
-
-Copy `XObjC4.workflow` to `~/Library/Services/`. Now edit the workflow with `Automator` and
-adjust the path to `xobjc4.py`. You can now add a keyboard shortcut to it via the Keyboard settings
-in the System Preferences tool. In XCode4 you can call it via the `Services` menu or via your keyboard shortcut.
-
-If Growl is installed it will issue also a notification.
 
 Related
 -------

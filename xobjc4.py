@@ -612,53 +612,85 @@ def xcodeReload():
     # print "XCode refresh"        
     # subprocess.call(['arch', '-i386', 'osascript', '-e', 'activate application "Finder"\nactivate application "XCode"'])
     pass
+
+def callAppleScript(script, input=None):
+    import StringIO
+    if not input:
+        return subprocess.check_output(
+            ['osascript', '-e', script],
+            stderr=subprocess.STDOUT)
+            
+    p = subprocess.Popen(['osascript', '-e', script], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+    p.stdin.write(input)
+    ret = p.communicate()[0]
+    p.stdin.close()
+    return ret
+
+def callGrowl(msg):
+    callAppleScript("""
+        tell application "GrowlHelperApp"
+        	set the allNotificationsList to {"XObjC"}
+        	set the enabledNotificationsList to {"XObjC"}
+        	register as application "XObjC" all notifications allNotificationsList default notifications enabledNotificationsList icon of application "XCode"
+        	notify with name "XObjC" title "XCode" description "%s" application name "XObjC"
+        end tell
+        """ % repr(msg)[1:-1])
+
+OUT = []
+
+def out(*a):
+    OUT.append(" ".join([str(v) for v in a]))
+    
+def main():
+    filenames = callAppleScript("""
+        tell application id "com.apple.dt.Xcode"
+            return path of source documents
+        end tell
+        """)
+        
+    if not filenames:
+        print "Nothing to do"
+    
+    filenames = [n.strip() for n in filenames.split(',')]
+    
+    modified = False
+    for filename in filenames: 
+    
+        filename = os.path.abspath(filename)
+        # print "Analyze %s" % filename
+        
+        mfiles = [filename] 
+        
+        # XXX Obsolete?
+        if os.path.isdir(filename):            
+            for root, dirs, files in os.walk(filename):
+                for name in files:
+                    if (BACKUP_FOLDER not in root) and name.endswith(".m"):                        
+                        mfiles.append(os.path.join(root, name))
+    
+        # print "FILES:"
+        # print "\n".join(mfiles)
+        
+        # elif srcroot:
+        #   files = glob.glob("Classes/*.m")
+
+        if mfiles:
+           
+            for fn in mfiles:
+                if modifyFiles(fn):
+                    out("Modified: %s" % os.path.basename(fn))
+                    modified = True
+    
+    if modified:
+        # xcodeReload()
+        pass
+    else:
+        out("No modifications needed")
+    
+    s = '\n'.join(OUT)
+    if s:
+        print s
+        callGrowl(s)
     
 if __name__ == "__main__":
-    import sys
-    import glob
-    
-    # You can also place it into 'XCode User Scripts' but it does not relead the window yet
-    try:
-        filename = '%%%{PBXFilePath}%%%'
-    except:
-        filename = ''
-    
-    if filename and (not filename.startswith('%')):
-        modifyFiles(filename)
-        xcodeReload()
-
-    elif len(sys.argv) >= 2:
-        # srcroot = os.environ.get("SRCROOT")
-        
-        modified = False
-        for filename in sys.argv[1:]: 
-        
-            filename = os.path.abspath(filename)
-            # print "Analyze %s" % filename
-            
-            mfiles = [filename] 
-            if os.path.isdir(filename):            
-                for root, dirs, files in os.walk(filename):
-                    for name in files:
-                        if (BACKUP_FOLDER not in root) and name.endswith(".m"):                        
-                            mfiles.append(os.path.join(root, name))
-        
-            # print "\n".join(mfiles)
-            
-            # elif srcroot:
-            #   files = glob.glob("Classes/*.m")
-
-            if mfiles:
-               
-                for fn in mfiles:
-                    if modifyFiles(fn):
-                        print "Modified %r" % fn
-                        modified = True
-        
-        if modified:
-            xcodeReload()
-        else:
-            print "No modifications needed"
-            
-    else:
-        print "Usage: xobjc.py [file/folder paths]"
+    main()
