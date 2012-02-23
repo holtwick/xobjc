@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 """
-Copyright (c) 2009 Dirk Holtwick <http://www.holtwick.it>
+Copyright (c) 2009-2012 Dirk Holtwick <http://www.holtwick.it>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -95,6 +95,12 @@ CHANGELOG:
 - Added 'xobjc' marker into @property
 - 'XASSIGN BOOL xxx' creates corect 'isXxx' getter
 
+0.14 (2012-02-23)
+- Xcode 4.3 is picky about the position of XPUBLIC therefore
+  moved it into the return parameter definition like
+  - (XPUBLIC void)someMethod
+- Empty deallocs will not be written
+
 TODO:
 
 - Work with more implementations etc. in one file and match name
@@ -106,7 +112,7 @@ TODO:
 
 """
 
-__version__ = "0.13"
+__version__ = "0.14"
 
 import re
 import os
@@ -132,8 +138,8 @@ DEBUG = 0
 FORCE_METHODS = False #True
 BOOL_WITH_IS_GETTER = True
 STRIP_TRAILING_SPACES = True
-NONATOMIC = ""
-# NONATOMIC = "nonatomic, "
+# NONATOMIC = ""
+NONATOMIC = "nonatomic, "
 
 ### CONFIG END 
 
@@ -194,9 +200,9 @@ rxViewDidUnloadBody = re.compile("""
     """, re.VERBOSE | re.M | re.DOTALL)
 
 rxVariables = re.compile("""
-    (XCOPY | XASSIGN | XRETAIN  | XIBOUTLET | XDELEGATE | IBOutlet | XPROPERTY\(.*?\))
+    (XCOPY | XASSIGN | XRETAIN  | XIBOUTLET | XDELEGATE | XPROPERTY\(.*?\))
     \s+
-    ([a-zA-Z0-9_][a-zA-Z0-9_\<\>]*)
+    ([^\s]*)
     ((        
         (?:
           \s*\* 
@@ -371,11 +377,7 @@ def analyze(hdata, mdata):
             
             # Properties
             propMarker = "xobjc "
-            if mode == 'iboutlet':
-                iboutlet = 1
-                mode = 'retain'
-                propBlock.append("@property (%s%s%s) %s %s%s;" % (propMarker, NONATOMIC, mode, type_, star, pvname))
-            elif mode == 'xiboutlet':
+            if mode == 'xiboutlet':
                 iboutlet = 1
                 mode = "retain"
                 type_ = "IBOutlet %s" % type_
@@ -431,18 +433,20 @@ def analyze(hdata, mdata):
         # Update 'dealloc'
         md = rxDealloc.search(body)
         if md:
-            # deallocbody = rxRelease.sub('', md.group("deallocbody")).strip()     
             deallocbody = md.group("deallocbody").strip()     
-            if deallocbody:
-                deallocbody = "    " + deallocbody + "\n\n"
-            newdealloc = ("- (void)dealloc { "
-                + ("\n" + deallocbody).rstrip()
-                + ("\n" + "\n".join(mySorted(dealloc))).rstrip()
-                + "\n    [super dealloc];\n}")
-            body = rxDealloc.sub(newdealloc, body)
+            if deallocbody or dealloc:
+                # deallocbody = rxRelease.sub('', md.group("deallocbody")).strip()     
+                if deallocbody:
+                    deallocbody = "    " + deallocbody + "\n\n"
+                newdealloc = ("- (void)dealloc { "
+                    + ("\n" + deallocbody).rstrip()
+                    + ("\n" + "\n".join(mySorted(dealloc))).rstrip()
+                    + "\n    [super dealloc];\n}")
+                body = rxDealloc.sub(newdealloc, body)
         else:
-            newdealloc = "- (void)dealloc {\n" + "\n".join(mySorted(dealloc)) + "\n    [super dealloc];\n}" 
-            body += "\n\n" + newdealloc  
+            if dealloc:
+                newdealloc = "- (void)dealloc {\n" + "\n".join(mySorted(dealloc)) + "\n    [super dealloc];\n}" 
+                body += "\n\n" + newdealloc  
 
         # Update 'viewDidUnload' (iPhone and iPad only)
         md = rxViewDidUnload.search(body)
@@ -467,12 +471,16 @@ def analyze(hdata, mdata):
         # if mMethod.group("comment"):
         #    mName = "\n" + mMethod.group("comment").strip() + "\n" + mName
         #if DEBUG: 
-        #    print mName, mMethod.groups()
+        
+        print mName, mMethod.groups()
         if (mMethod.group('kind') == 'XPUBLIC'):
             xpub += 1
             mDefs.append(mName + ';')
         elif mName.startswith("+") or mName.lstrip('-').lstrip().startswith("(IBAction)"):            
             mDefs.append(mName + ';')
+        elif mName.lstrip('-').lstrip().startswith("(XPUBLIC "):            
+            mDefs.append(mName.replace("XPUBLIC ", "") + ';')
+            xpub += 1
         elif rxInitMethod.match(mName):
             mDefs.append(mName + ';')        
     
