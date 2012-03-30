@@ -1,3 +1,10 @@
+---
+
+**Deprecated, this code should not be used any more! Better use Xcode 4 with ARC!**
+
+---
+
+
 xobjc
 =====
 
